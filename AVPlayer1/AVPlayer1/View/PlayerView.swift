@@ -26,7 +26,7 @@ class PlayerView: UIView {
         set {
             playerLayer.player = newValue
             if let url = newValue?.currentItem?.asset as? AVURLAsset {
-                let name = "\(url.url.lastPathComponent)"
+                let name = "\(url.url)"
                 NotificationCenter.default.post(name: NSNotification.Name(rawValue: "nameItem"), object: nil, userInfo: ["name" : "\(name)"])
             }
         }
