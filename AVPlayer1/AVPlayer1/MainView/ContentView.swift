@@ -21,7 +21,11 @@ struct ContentView_Previews: PreviewProvider {
     }
 }
 
-struct MusicPlayer: View {
+struct MusicPlayer: View, CheckNetWorkDelegate {
+    func checkNetWork() {
+        popUpInternet()
+    }
+    
     @ObservedObject var model: PlayerViewModel
     @State var width : CGFloat = 0
     @State var finish = false
@@ -33,11 +37,15 @@ struct MusicPlayer: View {
     
     init() {
         model = PlayerViewModel()
+        model.checkNetWorkDelegate = self
     }
     var body: some View {
         
+        ZStack {
+            
             VStack(spacing: 20) {
                 
+                // activity
                 GeometryReader { (geometry) in
                     Spacer()
                     LoadingView(isShowing: .constant(model.isLoading)) {
@@ -47,6 +55,8 @@ struct MusicPlayer: View {
                     .cornerRadius(15)
                 }
                 .padding(.top)
+                
+                // line repeat
                 HStack {
                     // setting sound
                     Button(action: {
@@ -69,7 +79,7 @@ struct MusicPlayer: View {
                     }
                 }
                 
-                
+                // time line
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.black.opacity(0.08)).frame(height: 8)
                     Capsule().fill(Color.red).frame(width: self.width, height: 8)
@@ -88,13 +98,16 @@ struct MusicPlayer: View {
                     
                 }.padding(.top)
                 
+                // pause and play
                 HStack {
                     let resultCurrent = String(timeCurrent).components(separatedBy: ".")
-                    let durationCurrent = FormatDuation().formatMinuteSeconds(Int(resultCurrent[0])!)
+                    let timeCurrent = model.checkStatusPlayer() ? Int(resultCurrent[0])! : 0
+                    let durationCurrent = FormatDuation().formatMinuteSeconds(timeCurrent)
                     Text("\(durationCurrent)")
                     Spacer()
                     let resultDuration = String(timeDuration).components(separatedBy: ".")
-                    let result = Int(resultDuration[0])! - Int(resultCurrent[0])!
+                    let timeDuration = model.checkStatusPlayer() ? Int(resultDuration[0])! : 0
+                    let result = timeDuration - timeCurrent
                     let durationDuration = FormatDuation().formatMinuteSeconds(result)
                     Text("\(durationDuration)")
                 }
@@ -104,14 +117,22 @@ struct MusicPlayer: View {
                     
                     // set button back
                     Button(action: {
-                        if model.indexPlayer >= 1 {
-                            model.indexPlayer -= 1
-                            model.playItemAtPosition(at: model.indexPlayer)
+                        if model.isPopUpInternet {
+                            popUpInternet()
+                        } else {
+                            if !model.isHideBack {
+                                return
+                            }
+                            if model.indexPlayer >= 1 {
+                                model.indexPlayer -= 1
+                                model.playItemAtPosition(at: model.indexPlayer)
+                            }
                         }
+                        
                     }) {
                         Image(systemName: "backward.fill").font(.title)
                     }
-                    .opacity(model.isHideBack ? 0.1 : 1)
+                    .opacity(model.isHideBack ? 1 : 0.1)
                     // set gobackward 15
                     Button(action: {
                         model.rewindVideo(by: 15)
@@ -122,20 +143,21 @@ struct MusicPlayer: View {
                     
                     // set play
                     Button(action: {
-                        
-                        model.isPlaying.toggle()
-                        if model.isPlaying {
-                            isPause = false
+                        if !Reachability.shared.isConnectedToInternet {
+                            popUpInternet()
                         } else {
-                            isPause = true
+                            model.isPlaying.toggle()
+                            if model.isPlaying {
+                                isPause = false
+                            } else {
+                                isPause = true
+                            }
+                            if self.finish {
+                                self.width = 0
+                                self.finish = false
+                                model.player.currentItem?.seek(to: .zero, completionHandler: nil)
+                            }
                         }
-                        if self.finish {
-                            self.width = 0
-                            self.finish = false
-                            model.player.currentItem?.seek(to: .zero, completionHandler: nil)
-                        }
-                        
-                        
                     }) {
                         Image(systemName: model.isPlaying && !self.finish ? "pause.fill" : "play.fill").font(.title)
                     }
@@ -151,34 +173,76 @@ struct MusicPlayer: View {
                     
                     // set forward
                     Button(action: {
-                        if model.indexPlayer < model.films.count - 1 {
-                            model.indexPlayer += 1
-                            model.playItemAtPosition(at: model.indexPlayer)
+                        if !Reachability.shared.isConnectedToInternet {
+                            model.isPopUpInternet = true
+                            popUpInternet()
+                        } else {
+                            model.isPopUpInternet = false
+                            if !model.isHideNext {
+                                return
+                            }
+                            if model.indexPlayer < model.films.count - 1 {
+                                model.indexPlayer += 1
+                                model.playItemAtPosition(at: model.indexPlayer)
+                            }
                         }
                     }) {
                         Image(systemName: "forward.fill").font(.title)
                     }
-                    .opacity(model.isHideNext ? 0.1 : 1)
+                    .opacity(model.isHideNext ? 1 : 0.1)
                 }
             }.padding()
+        }
             .onAppear {
-                model.setUrlItems()
-                let screen = UIScreen.main.bounds.width - 30
+                if !Reachability.shared.isConnectedToInternet {
+                    model.isPopUpInternet = true
+                } else {
+                    model.isPopUpInternet = false
+                }
                 
-                timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {(_) in
-                    // check player.currentItem exists ?
-                    guard let _ =  model.player.currentItem else { return }
-                    timeCurrent = CMTimeGetSeconds((model.player.currentTime() as CMTime?)!)
-                    timeDuration = CMTimeGetSeconds((model.player.currentItem?.duration as CMTime?)!)
-                    let value = timeCurrent / timeDuration
-                    if !isPause {
-                        if model.player.status == .readyToPlay {
-                            self.width = screen * CGFloat(value)
-                        }
-                    }
+                if model.isPopUpInternet {
+                    popUpInternet()
+                }
+                setData()
+            }
+        }
+    
+    func setData() {
+        model.setUrlItems()
+        let screen = UIScreen.main.bounds.width - 30
+        
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {(_) in
+            // check player.currentItem exists ?
+            guard let _ =  model.player.currentItem else { return }
+            timeCurrent = CMTimeGetSeconds((model.player.currentTime() as CMTime?)!)
+            timeDuration = CMTimeGetSeconds((model.player.currentItem?.duration as CMTime?)!)
+            let value = timeCurrent / timeDuration
+            if !isPause {
+                if model.player.status == .readyToPlay {
+                    self.width = screen * CGFloat(value)
                 }
             }
         }
     }
+    
+    // set popup internet
+    func popUpInternet() {
+        model.player.removeAllItems()
+        let alert = UIAlertController(title: "NetWork", message: "Please check your network", preferredStyle: .alert)
+        let ok = UIAlertAction(title: "OK", style: .default) { (_) in
+            
+            if !Reachability.shared.isConnectedToInternet {
+                model.isPopUpInternet = true
+                popUpInternet()
+            } else {
+                model.isPopUpInternet = false
+                model.playItemAtPosition(at: model.indexPlayer)
+            }
+        }
+        alert.addAction(ok)
+        UIApplication.shared.windows.first?.rootViewController?.present(alert, animated: true, completion: {
+        })
+    }
+}
 
 

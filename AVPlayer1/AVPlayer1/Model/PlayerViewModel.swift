@@ -3,18 +3,28 @@
 //  AVPlayer
 //
 //  Created by Vu Minh Tam on 3/30/21.
-//
+// https://tainhac365.org/video/30782/video-nhac-cuoc-song-xa-nha-lyric-video-mien-phi.html
+// https://c4-ex-swe.nixcdn.com/PreNCT18/CuocSongXaNhaLyricVideo-MinhVuongM4U-6246814.mp4?st=EIc660IbW_Xb8Kck6DW8Kg&e=1618545952
+// https://vredir.nixcdn.com/PreNCT14/NhoGiaDinh-LeBaoBinh-5412176.mp4?st=9OAY9tIPtbgUjP2w8sO0-g&e=1618546099
+// https://vredir.nixcdn.com/PreNCT14/DemLangThang-DinhPhuoc-5468044.mp4?st=auRGlK6NAnVy2QgW9p999Q&e=1618546221
 
 import Foundation
 import AVFoundation
 import SwiftUI
+
+protocol CheckNetWorkDelegate {
+    func checkNetWork()
+}
 
 class PlayerViewModel: NSObject, ObservableObject {
     
     var player: AVQueuePlayer = AVQueuePlayer()
     
     var status:Float = 0.0
-    var films = ["video","video1","video2"]
+    var films = ["https://c4-ex-swe.nixcdn.com/PreNCT18/CuocSongXaNhaLyricVideo-MinhVuongM4U-6246814.mp4?st=EIc660IbW_Xb8Kck6DW8Kg&e=1618545952",
+                 "https://vredir.nixcdn.com/PreNCT14/NhoGiaDinh-LeBaoBinh-5412176.mp4?st=9OAY9tIPtbgUjP2w8sO0-g&e=1618546099",
+                 "https://vredir.nixcdn.com/PreNCT14/DemLangThang-DinhPhuoc-5468044.mp4?st=auRGlK6NAnVy2QgW9p999Q&e=1618546221",
+    ]
     var episode = ["Episode One","Episode Two","Episode Three"]
     var fileName = ""
     private var urls: [URL] = []
@@ -23,18 +33,23 @@ class PlayerViewModel: NSObject, ObservableObject {
     @Published var indexPlayer: Int = 0
     @Published var isHideBack = false
     @Published var isHideNext = false
-    @Published var isRepeat: Bool = false 
+    @Published var isRepeat: Bool = false
+    @Published var isPopUpInternet: Bool = false
     var playerLooper: AVPlayerLooper?
+    var checkNetWorkDelegate: CheckNetWorkDelegate?
     
     override init() {
     }
     
     func setUrlItems() {
         for i in 0 ..< films.count {
-            let asset = AVAsset(url: Bundle.main.url(forResource: self.films[i], withExtension: "mp4")!)
-            let playerItem = AVPlayerItem(asset: asset)
-            playerItems.append(playerItem)
+            if let url = URL(string: self.films[i]) {
+                let asset = AVAsset(url: url)
+                let playerItem = AVPlayerItem(asset: asset)
+                playerItems.append(playerItem)
+            }
         }
+        
         self.player =  AVQueuePlayer(items: playerItems)
         player.addObserver(self, forKeyPath: "timeControlStatus", options: [.old, .new], context: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(changeIndexPlayer), name: NSNotification.Name(rawValue: "nameItem"), object: nil)
@@ -111,11 +126,16 @@ class PlayerViewModel: NSObject, ObservableObject {
             let oldStatus = AVPlayer.TimeControlStatus(rawValue: oldValue)
             let newStatus = AVPlayer.TimeControlStatus(rawValue: newValue)
             if newStatus != oldStatus {
-                DispatchQueue.main.async {[weak self] in
-                    if newStatus == .playing || newStatus == .paused {
-                        self?.isLoading = false
-                    } else {
-                        self?.isLoading = true
+                if !Reachability.shared.isConnectedToInternet {
+                    self.isPopUpInternet = true
+                    checkNetWorkDelegate?.checkNetWork()
+                } else {
+                    DispatchQueue.main.async {[weak self] in
+                        if newStatus == .playing || newStatus == .paused {
+                            self?.isLoading = false
+                        } else {
+                            self?.isLoading = true
+                        }
                     }
                 }
             }
@@ -123,36 +143,36 @@ class PlayerViewModel: NSObject, ObservableObject {
     }
     
     @objc func changeIndexPlayer(notification: NSNotification) {
-        let name = notification.userInfo?["name"] as? String
-        let finalName = name!.replacingOccurrences(of: ".mp4", with: "")
-        var index: Int = 0
-        switch finalName {
-        case "video":
-            index = 0
-            DispatchQueue.main.async {
-                self.isHideBack = true
-                self.isHideNext = false
+  
+        if !isPopUpInternet {
+            let name = notification.userInfo?["name"] as? String
+           
+            let index =  findIndexPlayerItems(name: name!)
+            
+            switch index {
+            case 0:
+                DispatchQueue.main.async {
+                    self.isHideBack = false
+                    self.isHideNext = true
+                }
+            case 1:
+                DispatchQueue.main.async {
+                    self.isHideBack = true
+                    self.isHideNext = true
+                }
+            case 2:
+                DispatchQueue.main.async {
+                    self.isHideNext = false
+                    self.isHideBack = true
+                }
+            default:
+                break
             }
-        case "video1":
-            index = 1
+            
             DispatchQueue.main.async {
-                self.isHideBack = false
-                self.isHideNext = false
+                self.indexPlayer = index ?? 0
             }
-        case "video2":
-            index = 2
-            DispatchQueue.main.async {
-                self.isHideNext = true
-                self.isHideBack = false
-            }
-        default:
-            break
         }
-        
-        DispatchQueue.main.async {
-            self.indexPlayer = index
-        }
-        
     }
     
     @objc func playerEndedPlaying(_ notification: Notification) {
@@ -178,4 +198,21 @@ class PlayerViewModel: NSObject, ObservableObject {
             }
         }
     }
+    
+    func findIndexPlayerItems(name: String) -> Int? {
+        for i in 0...films.count - 1 {
+              if films[i] == name {
+                 return i
+              }
+           }
+        return nil
+    }
+    
+    func checkStatusPlayer() -> Bool {
+        if player.currentItem?.status == .readyToPlay {
+            return true
+        }
+        return false
+    }
+    
 }
