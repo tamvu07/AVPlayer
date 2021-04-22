@@ -7,10 +7,13 @@
 // https://c4-ex-swe.nixcdn.com/PreNCT18/CuocSongXaNhaLyricVideo-MinhVuongM4U-6246814.mp4?st=EIc660IbW_Xb8Kck6DW8Kg&e=1618545952
 // https://vredir.nixcdn.com/PreNCT14/NhoGiaDinh-LeBaoBinh-5412176.mp4?st=9OAY9tIPtbgUjP2w8sO0-g&e=1618546099
 // https://vredir.nixcdn.com/PreNCT14/DemLangThang-DinhPhuoc-5468044.mp4?st=auRGlK6NAnVy2QgW9p999Q&e=1618546221
-
+// mp3
 import Foundation
 import AVFoundation
 import SwiftUI
+import UIKit
+import AVKit
+import AssetsLibrary
 
 protocol CheckNetWorkDelegate {
     func checkNetWork()
@@ -19,13 +22,20 @@ protocol CheckNetWorkDelegate {
 class PlayerViewModel: NSObject, ObservableObject {
     
     var player: AVQueuePlayer = AVQueuePlayer()
-    
+    static let share = PlayerViewModel()
+    let id = UUID()
     var status:Float = 0.0
-    var films = ["https://c4-ex-swe.nixcdn.com/PreNCT18/CuocSongXaNhaLyricVideo-MinhVuongM4U-6246814.mp4?st=EIc660IbW_Xb8Kck6DW8Kg&e=1618545952",
+    var audio = ["https://c4-ex-swe.nixcdn.com/PreNCT18/CuocSongXaNhaLyricVideo-MinhVuongM4U-6246814.mp4?st=EIc660IbW_Xb8Kck6DW8Kg&e=1618545952",
                  "https://vredir.nixcdn.com/PreNCT14/NhoGiaDinh-LeBaoBinh-5412176.mp4?st=9OAY9tIPtbgUjP2w8sO0-g&e=1618546099",
                  "https://vredir.nixcdn.com/PreNCT14/DemLangThang-DinhPhuoc-5468044.mp4?st=auRGlK6NAnVy2QgW9p999Q&e=1618546221",
     ]
+    var mp3 = ["https://109a15170.vws.vegacdn.vn//U86v-OprSNK2DCewvsoB9w//1618953112//media1//song//web1//32//262676//262676.mp3?v=3",
+               "https://109a15170.vws.vegacdn.vn//5BfcNgZ_4R5nRw-gG6AQ4g//1618953112//media1//song//web1//35//288987//288987.mp3?v=3",
+               "https://109a15170.vws.vegacdn.vn//gO5xPtJvkkyC34oKSGvHOA//1618953112//media1//song//web1//41//339858//339858.mp3?v=3",
+    ]
+    
     var episode = ["Episode One","Episode Two","Episode Three"]
+    var song = ["Song One","Song Two","Song Three"]
     var fileName = ""
     private var urls: [URL] = []
     var playerItems: [AVPlayerItem] = []
@@ -37,23 +47,77 @@ class PlayerViewModel: NSObject, ObservableObject {
     @Published var isPopUpInternet: Bool = false
     var playerLooper: AVPlayerLooper?
     var checkNetWorkDelegate: CheckNetWorkDelegate?
+    var timeObserverToken: Any?
+    @Published var activityItem: [Any] = []
+ 
     
     override init() {
     }
     
-    func setUrlItems() {
-        for i in 0 ..< films.count {
-            if let url = URL(string: self.films[i]) {
+    func setURLAudio() {
+        playerItems.removeAll()
+        self.player.removeAllItems()
+        for i in 0 ..< audio.count {
+            if let url = URL(string: self.audio[i]) {
                 let asset = AVAsset(url: url)
                 let playerItem = AVPlayerItem(asset: asset)
                 playerItems.append(playerItem)
             }
         }
-        
         self.player =  AVQueuePlayer(items: playerItems)
+    }
+    
+    func setURLMp3() {
+        playerItems.removeAll()
+        self.player.removeAllItems()
+        for i in 0 ..< mp3.count {
+            if let url = URL(string: self.mp3[i]) {
+                let asset = AVAsset(url: url)
+                let playerItem = AVPlayerItem(asset: asset)
+                playerItems.append(playerItem)
+            }
+        }
+        self.player =  AVQueuePlayer(items: playerItems)
+    }
+    
+    func setPlayerItems() {
+//        playerItems.removeAll()
+//        player.removeAllItems()
+//        for i in 0 ..< audio.count {
+//            if let url = URL(string: self.audio[i]) {
+//                let asset = AVAsset(url: url)
+//                let playerItem = AVPlayerItem(asset: asset)
+//                playerItems.append(playerItem)
+//            }
+//        }
+        
+//        self.player =  AVQueuePlayer(items: playerItems)
+        
         player.addObserver(self, forKeyPath: "timeControlStatus", options: [.old, .new], context: nil)
+        
         NotificationCenter.default.addObserver(self, selector: #selector(changeIndexPlayer), name: NSNotification.Name(rawValue: "nameItem"), object: nil)
+        
         NotificationCenter.default.addObserver(self, selector: #selector(playerEndedPlaying), name: Notification.Name("AVPlayerItemDidPlayToEndTimeNotification"), object: nil)
+        addPeriodicTimeObserver()
+        
+//        let videoUrl: NSURL = NSURL(fileURLWithPath: films[0])
+//        let videoUrl : NSURL =  NSURL(fileURLWithPath: Bundle.main.path(forResource: "video", ofType: "mp4")!)
+//        let audioUrl: NSURL = NSURL(fileURLWithPath: mp3[0])
+//        mergeFilesWithUrl(videoUrl: videoUrl, audioUrl: audioUrl)
+       
+    }
+    
+    func addPeriodicTimeObserver() {
+        // Notify every half second
+        let timeScale = CMTimeScale(NSEC_PER_SEC)
+        let time = CMTime(seconds: 0.5, preferredTimescale: timeScale)
+
+        timeObserverToken = player.addPeriodicTimeObserver(forInterval: time,
+                                                          queue: .main) {
+            [weak self] time in
+            // update player transport UI
+            
+        }
     }
     
     @Published var isPlaying: Bool = false {
@@ -135,6 +199,22 @@ class PlayerViewModel: NSObject, ObservableObject {
                             self?.isLoading = false
                         } else {
                             self?.isLoading = true
+                            if let reason = self?.player.reasonForWaitingToPlay {
+
+                                  switch reason {
+                                  case .evaluatingBufferingRate:
+                                      print("reasonForWaitingToPlay.evaluatingBufferingRate")
+
+                                  case .toMinimizeStalls:
+                                      print("reasonForWaitingToPlay.toMinimizeStalls")
+
+                                  case .noItemToPlay:
+                                      print("reasonForWaitingToPlay.noItemToPlay")
+
+                                  default:
+                                      print("Unknown \(reason)")
+                                  }
+                              }
                         }
                     }
                 }
@@ -200,8 +280,8 @@ class PlayerViewModel: NSObject, ObservableObject {
     }
     
     func findIndexPlayerItems(name: String) -> Int? {
-        for i in 0...films.count - 1 {
-              if films[i] == name {
+        for i in 0...audio.count - 1 {
+              if audio[i] == name {
                  return i
               }
            }
@@ -213,6 +293,112 @@ class PlayerViewModel: NSObject, ObservableObject {
             return true
         }
         return false
+    }
+    
+    // merge audio
+    func mergeFilesWithUrl(videoUrl:NSURL, audioUrl:NSURL) {
+        let mixComposition : AVMutableComposition = AVMutableComposition()
+        var mutableCompositionVideoTrack : [AVMutableCompositionTrack] = []
+        var mutableCompositionAudioTrack : [AVMutableCompositionTrack] = []
+        let totalVideoCompositionInstruction : AVMutableVideoCompositionInstruction = AVMutableVideoCompositionInstruction()
+
+
+        //start merge
+
+        let aVideoAsset : AVAsset = AVAsset(url: videoUrl as URL)
+        let aAudioAsset : AVAsset = AVAsset(url: audioUrl as URL)
+
+        mutableCompositionVideoTrack.append(mixComposition.addMutableTrack(withMediaType: AVMediaType.video, preferredTrackID: kCMPersistentTrackID_Invalid)!)
+        mutableCompositionAudioTrack.append( mixComposition.addMutableTrack(withMediaType: AVMediaType.audio, preferredTrackID: kCMPersistentTrackID_Invalid)!)
+
+        let aVideoAssetTrack : AVAssetTrack = aVideoAsset.tracks(withMediaType: AVMediaType.video)[0]
+        let aAudioAssetTrack : AVAssetTrack = aAudioAsset.tracks(withMediaType: AVMediaType.audio)[0]
+
+
+
+        do{
+            try mutableCompositionVideoTrack[0].insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: aVideoAssetTrack.timeRange.duration), of: aVideoAssetTrack, at: CMTime.zero)
+
+            //In my case my audio file is longer then video file so i took videoAsset duration
+            //instead of audioAsset duration
+
+            try mutableCompositionAudioTrack[0].insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: aVideoAssetTrack.timeRange.duration), of: aAudioAssetTrack, at: CMTime.zero)
+
+            //Use this instead above line if your audiofile and video file's playing durations are same
+
+            //            try mutableCompositionAudioTrack[0].insertTimeRange(CMTimeRangeMake(kCMTimeZero, aVideoAssetTrack.timeRange.duration), ofTrack: aAudioAssetTrack, atTime: kCMTimeZero)
+
+        }catch{
+
+        }
+
+        totalVideoCompositionInstruction.timeRange = CMTimeRangeMake(start: CMTime.zero,duration: aVideoAssetTrack.timeRange.duration )
+
+        let mutableVideoComposition : AVMutableVideoComposition = AVMutableVideoComposition()
+        mutableVideoComposition.frameDuration = CMTimeMake(value: 1, timescale: 30)
+
+        mutableVideoComposition.renderSize = CGSize(width: 1280,height: 720)
+
+        //        playerItem = AVPlayerItem(asset: mixComposition)
+        //        player = AVPlayer(playerItem: playerItem!)
+        //
+        //
+        //        AVPlayerVC.player = player
+
+
+
+        //find your video on this URl
+        let savePathUrl : NSURL = NSURL(fileURLWithPath: NSHomeDirectory() + "/Documents/newVideo123.mp4")
+
+        let assetExport: AVAssetExportSession = AVAssetExportSession(asset: mixComposition, presetName: AVAssetExportPresetHighestQuality)!
+        assetExport.outputFileType = AVFileType.mp4
+        assetExport.outputURL = savePathUrl as URL
+        assetExport.shouldOptimizeForNetworkUse = true
+
+        assetExport.exportAsynchronously { [self] () -> Void in
+            switch assetExport.status {
+
+            case AVAssetExportSessionStatus.completed:
+
+                //Uncomment this if u want to store your video in asset
+
+                //let assetsLib = ALAssetsLibrary()
+                //assetsLib.writeVideoAtPathToSavedPhotosAlbum(savePathUrl, completionBlock: nil)
+
+                print("success")
+                
+                let fileName = String((savePathUrl.lastPathComponent!)) as NSString
+                // Create destination URL
+                let documentsUrl:URL =  (FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first as URL?)!
+                let destinationFileUrl = documentsUrl.appendingPathComponent("\(fileName)")
+                //Create URL to the source file you want to download
+//                let sessionConfig = URLSessionConfiguration.default
+//                let session = URLSession(configuration: sessionConfig)
+//                let request = URLRequest(url: URL(string: savePathUrl.relativeString)!)
+                do {
+                    let contents  = try FileManager.default.contentsOfDirectory(at: documentsUrl, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+                    for indexx in 0..<contents.count {
+                        if contents[indexx].lastPathComponent == destinationFileUrl.lastPathComponent {
+                            
+                            DispatchQueue.main.async {
+                                self.activityItem = [contents[indexx]]
+                            }
+                        }
+                    }
+                }
+                catch (let err) {
+                    print("error: \(err)")
+                }
+            case  AVAssetExportSessionStatus.failed:
+                print("failed \(assetExport.error)")
+            case AVAssetExportSessionStatus.cancelled:
+                print("cancelled \(assetExport.error)")
+            default:
+                print("complete")
+            }
+        }
+
+
     }
     
 }
