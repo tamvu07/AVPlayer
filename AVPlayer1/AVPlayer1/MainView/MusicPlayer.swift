@@ -209,9 +209,9 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
                 }
                 setData()
             }
-//        .onDisappear() {
-//            model.
-//        }
+        .onDisappear() {
+            PlayerViewModel.share.isPlaying = false
+        }
         }
 
     func setData() {

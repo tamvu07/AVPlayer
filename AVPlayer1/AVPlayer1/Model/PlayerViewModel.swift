@@ -25,14 +25,11 @@ class PlayerViewModel: NSObject, ObservableObject {
     static let share = PlayerViewModel()
     let id = UUID()
     var status:Float = 0.0
-    var audio = ["https://c4-ex-swe.nixcdn.com/PreNCT18/CuocSongXaNhaLyricVideo-MinhVuongM4U-6246814.mp4?st=EIc660IbW_Xb8Kck6DW8Kg&e=1618545952",
+    var audio = ["https://drive.google.com/file/d/1v6AxxhcXY6gwmryEf_pyAVCdD7__QBIe/view",
                  "https://vredir.nixcdn.com/PreNCT14/NhoGiaDinh-LeBaoBinh-5412176.mp4?st=9OAY9tIPtbgUjP2w8sO0-g&e=1618546099",
                  "https://vredir.nixcdn.com/PreNCT14/DemLangThang-DinhPhuoc-5468044.mp4?st=auRGlK6NAnVy2QgW9p999Q&e=1618546221",
     ]
-    var mp3 = ["https://109a15170.vws.vegacdn.vn//U86v-OprSNK2DCewvsoB9w//1618953112//media1//song//web1//32//262676//262676.mp3?v=3",
-               "https://109a15170.vws.vegacdn.vn//5BfcNgZ_4R5nRw-gG6AQ4g//1618953112//media1//song//web1//35//288987//288987.mp3?v=3",
-               "https://109a15170.vws.vegacdn.vn//gO5xPtJvkkyC34oKSGvHOA//1618953112//media1//song//web1//41//339858//339858.mp3?v=3",
-    ]
+    var mp3 = ["mp31", "mp32", "mp33"]
     
     var episode = ["Episode One","Episode Two","Episode Three"]
     var song = ["Song One","Song Two","Song Three"]
@@ -71,8 +68,8 @@ class PlayerViewModel: NSObject, ObservableObject {
         playerItems.removeAll()
         self.player.removeAllItems()
         for i in 0 ..< mp3.count {
-            if let url = URL(string: self.mp3[i]) {
-                let asset = AVAsset(url: url)
+            if let url = Bundle.main.path(forResource: self.mp3[i], ofType: "mp3") {
+                let asset = AVAsset(url: URL(fileURLWithPath: url))
                 let playerItem = AVPlayerItem(asset: asset)
                 playerItems.append(playerItem)
             }
@@ -99,11 +96,6 @@ class PlayerViewModel: NSObject, ObservableObject {
         
         NotificationCenter.default.addObserver(self, selector: #selector(playerEndedPlaying), name: Notification.Name("AVPlayerItemDidPlayToEndTimeNotification"), object: nil)
         addPeriodicTimeObserver()
-        
-//        let videoUrl: NSURL = NSURL(fileURLWithPath: films[0])
-//        let videoUrl : NSURL =  NSURL(fileURLWithPath: Bundle.main.path(forResource: "video", ofType: "mp4")!)
-//        let audioUrl: NSURL = NSURL(fileURLWithPath: mp3[0])
-//        mergeFilesWithUrl(videoUrl: videoUrl, audioUrl: audioUrl)
        
     }
     
@@ -295,6 +287,13 @@ class PlayerViewModel: NSObject, ObservableObject {
         return false
     }
     
+    // set merge audio and mp3
+    func mergeUrl(indexAudio: Int, indexMp3: Int) {
+        let videoUrl: NSURL = NSURL(fileURLWithPath: audio[indexAudio])
+        let audioUrl: NSURL = NSURL(fileURLWithPath: mp3[indexMp3])
+        mergeFilesWithUrl(videoUrl: videoUrl.baseURL as! NSURL, audioUrl: audioUrl)
+    }
+    
     // merge audio
     func mergeFilesWithUrl(videoUrl:NSURL, audioUrl:NSURL) {
         let mixComposition : AVMutableComposition = AVMutableComposition()
@@ -313,8 +312,6 @@ class PlayerViewModel: NSObject, ObservableObject {
 
         let aVideoAssetTrack : AVAssetTrack = aVideoAsset.tracks(withMediaType: AVMediaType.video)[0]
         let aAudioAssetTrack : AVAssetTrack = aAudioAsset.tracks(withMediaType: AVMediaType.audio)[0]
-
-
 
         do{
             try mutableCompositionVideoTrack[0].insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: aVideoAssetTrack.timeRange.duration), of: aVideoAssetTrack, at: CMTime.zero)
@@ -359,9 +356,6 @@ class PlayerViewModel: NSObject, ObservableObject {
             switch assetExport.status {
 
             case AVAssetExportSessionStatus.completed:
-
-                //Uncomment this if u want to store your video in asset
-
                 //let assetsLib = ALAssetsLibrary()
                 //assetsLib.writeVideoAtPathToSavedPhotosAlbum(savePathUrl, completionBlock: nil)
 
@@ -390,15 +384,12 @@ class PlayerViewModel: NSObject, ObservableObject {
                     print("error: \(err)")
                 }
             case  AVAssetExportSessionStatus.failed:
-                print("failed \(assetExport.error)")
+                print("failed \(String(describing: assetExport.error))")
             case AVAssetExportSessionStatus.cancelled:
-                print("cancelled \(assetExport.error)")
+                print("cancelled \(String(describing: assetExport.error))")
             default:
                 print("complete")
             }
         }
-
-
     }
-    
 }
