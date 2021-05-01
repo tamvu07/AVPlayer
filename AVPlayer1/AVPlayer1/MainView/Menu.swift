@@ -23,6 +23,10 @@ struct Menu: View {
             .onAppear {
             }
         }
+        .onAppear() {
+            PlayerViewModel.share.initalMp4()
+            PlayerViewModel.share.initalMp3()
+        }
     }
     
     func destinationView(music: Music) -> some View {

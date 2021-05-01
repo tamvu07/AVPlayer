@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B556AE3A263C096B00061693 /* RowMenuDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = B556AE39263C096B00061693 /* RowMenuDetail.swift */; };
 		CDCCC08C7E5D3F1B3F2B6339 /* Pods_AVPlayer1.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 13BAD11101F2BAC523907F9C /* Pods_AVPlayer1.framework */; };
 		E566DD8C2627DB20002A93D4 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E566DD8B2627DB20002A93D4 /* AVFoundation.framework */; };
 		E566DD9726281FBE002A93D4 /* Manager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E566DD9626281FBE002A93D4 /* Manager.swift */; };
@@ -40,6 +41,7 @@
 /* Begin PBXFileReference section */
 		13BAD11101F2BAC523907F9C /* Pods_AVPlayer1.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AVPlayer1.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B00404D9FF38719B1FA9CBD0 /* Pods-AVPlayer1.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AVPlayer1.release.xcconfig"; path = "Target Support Files/Pods-AVPlayer1/Pods-AVPlayer1.release.xcconfig"; sourceTree = "<group>"; };
+		B556AE39263C096B00061693 /* RowMenuDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RowMenuDetail.swift; sourceTree = "<group>"; };
 		DCCF135CCA707E4B6066C035 /* Pods-AVPlayer1.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AVPlayer1.debug.xcconfig"; path = "Target Support Files/Pods-AVPlayer1/Pods-AVPlayer1.debug.xcconfig"; sourceTree = "<group>"; };
 		E566DD8B2627DB20002A93D4 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		E566DD9626281FBE002A93D4 /* Manager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Manager.swift; sourceTree = "<group>"; };
@@ -215,6 +217,7 @@
 			isa = PBXGroup;
 			children = (
 				E585EF57262E6DF0006915D1 /* RowMenu.swift */,
+				B556AE39263C096B00061693 /* RowMenuDetail.swift */,
 			);
 			path = Row;
 			sourceTree = "<group>";
@@ -352,6 +355,7 @@
 				E5682137261F121F00B76AE7 /* AVPlayer1App.swift in Sources */,
 				E566DD9726281FBE002A93D4 /* Manager.swift in Sources */,
 				E585EF5C262E6F83006915D1 /* Music.swift in Sources */,
+				B556AE3A263C096B00061693 /* RowMenuDetail.swift in Sources */,
 				E56AA41926315CFD003D648B /* Dropdown.swift in Sources */,
 				E585EF54262E6C7B006915D1 /* Menu.swift in Sources */,
 				E5682153261F1C7E00B76AE7 /* PlayerView.swift in Sources */,

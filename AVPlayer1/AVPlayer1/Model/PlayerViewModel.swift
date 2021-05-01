@@ -19,20 +19,37 @@ protocol CheckNetWorkDelegate {
     func checkNetWork()
 }
 
+struct File: Identifiable, Hashable {
+    static func == (lhs: File, rhs: File) -> Bool {
+        return false
+    }
+    
+    let id = UUID()
+    var url: String
+    var name: String
+    var imageName: String
+    
+    var image: Image? {
+        Image(systemName: imageName)
+    }
+    
+    init(url: String, name: String, imageName: String) {
+        self.url = url
+        self.name = name
+        self.imageName = imageName
+    }
+}
+
 class PlayerViewModel: NSObject, ObservableObject {
     
     var player: AVQueuePlayer = AVQueuePlayer()
     static let share = PlayerViewModel()
     let id = UUID()
     var status:Float = 0.0
-    var audio = ["https://drive.google.com/file/d/1v6AxxhcXY6gwmryEf_pyAVCdD7__QBIe/view",
-                 "https://vredir.nixcdn.com/PreNCT14/NhoGiaDinh-LeBaoBinh-5412176.mp4?st=9OAY9tIPtbgUjP2w8sO0-g&e=1618546099",
-                 "https://vredir.nixcdn.com/PreNCT14/DemLangThang-DinhPhuoc-5468044.mp4?st=auRGlK6NAnVy2QgW9p999Q&e=1618546221",
-    ]
-    var mp3 = ["mp31", "mp32", "mp33"]
     
-    var episode = ["Episode One","Episode Two","Episode Three"]
-    var song = ["Song One","Song Two","Song Three"]
+    var ListMp4: [File] = []
+    var ListMp3: [File] = []
+    
     var fileName = ""
     private var urls: [URL] = []
     var playerItems: [AVPlayerItem] = []
@@ -42,7 +59,6 @@ class PlayerViewModel: NSObject, ObservableObject {
     @Published var isHideNext = false
     @Published var isRepeat: Bool = false
     @Published var isPopUpInternet: Bool = false
-    var playerLooper: AVPlayerLooper?
     var checkNetWorkDelegate: CheckNetWorkDelegate?
     var timeObserverToken: Any?
     @Published var activityItem: [Any] = []
@@ -51,11 +67,29 @@ class PlayerViewModel: NSObject, ObservableObject {
     override init() {
     }
     
-    func setURLAudio() {
+    func initalMp4() {
+        let mp4First = File.init(url: "https://c4-ex-swe.nixcdn.com/PreNCT18/CuocSongXaNhaLyricVideo-MinhVuongM4U-6246814.mp4?st=EIc660IbW_Xb8Kck6DW8Kg&e=1618545952", name: "Episode One", imageName: "tv.music.note.fill")
+        let mp4Second = File.init(url: "https://vredir.nixcdn.com/PreNCT14/NhoGiaDinh-LeBaoBinh-5412176.mp4?st=9OAY9tIPtbgUjP2w8sO0-g&e=1618546099", name: "Episode Two", imageName: "tv.music.note.fill")
+        let mp4Three = File.init(url: "https://vredir.nixcdn.com/PreNCT14/DemLangThang-DinhPhuoc-5468044.mp4?st=auRGlK6NAnVy2QgW9p999Q&e=1618546221", name: "Episode Three", imageName: "tv.music.note.fill")
+        ListMp4.append(mp4First)
+        ListMp4.append(mp4Second)
+        ListMp4.append(mp4Three)
+    }
+    
+    func initalMp3() {
+        let mp3First = File.init(url: "mp31", name: "Song One", imageName: "music.note")
+        let mp3Second = File.init(url: "mp32", name: "Song Two", imageName: "music.note")
+        let mp3Three = File.init(url: "mp33", name: "Song Three", imageName: "music.note")
+        ListMp3.append(mp3First)
+        ListMp3.append(mp3Second)
+        ListMp3.append(mp3Three)
+    }
+    
+    func setPlayerItemsMp4() {
         playerItems.removeAll()
         self.player.removeAllItems()
-        for i in 0 ..< audio.count {
-            if let url = URL(string: self.audio[i]) {
+        for i in 0 ..< ListMp4.count {
+            if let url = URL(string: self.ListMp4[i].url) {
                 let asset = AVAsset(url: url)
                 let playerItem = AVPlayerItem(asset: asset)
                 playerItems.append(playerItem)
@@ -64,11 +98,11 @@ class PlayerViewModel: NSObject, ObservableObject {
         self.player =  AVQueuePlayer(items: playerItems)
     }
     
-    func setURLMp3() {
+    func setPlayerItemsMp3() {
         playerItems.removeAll()
         self.player.removeAllItems()
-        for i in 0 ..< mp3.count {
-            if let url = Bundle.main.path(forResource: self.mp3[i], ofType: "mp3") {
+        for i in 0 ..< ListMp3.count {
+            if let url = Bundle.main.path(forResource: self.ListMp3[i].url, ofType: "mp3") {
                 let asset = AVAsset(url: URL(fileURLWithPath: url))
                 let playerItem = AVPlayerItem(asset: asset)
                 playerItems.append(playerItem)
@@ -78,17 +112,6 @@ class PlayerViewModel: NSObject, ObservableObject {
     }
     
     func setPlayerItems() {
-//        playerItems.removeAll()
-//        player.removeAllItems()
-//        for i in 0 ..< audio.count {
-//            if let url = URL(string: self.audio[i]) {
-//                let asset = AVAsset(url: url)
-//                let playerItem = AVPlayerItem(asset: asset)
-//                playerItems.append(playerItem)
-//            }
-//        }
-        
-//        self.player =  AVQueuePlayer(items: playerItems)
         
         player.addObserver(self, forKeyPath: "timeControlStatus", options: [.old, .new], context: nil)
         
@@ -108,7 +131,6 @@ class PlayerViewModel: NSObject, ObservableObject {
                                                           queue: .main) {
             [weak self] time in
             // update player transport UI
-            
         }
     }
     
@@ -165,9 +187,7 @@ class PlayerViewModel: NSObject, ObservableObject {
     }
     
     func playItemAtPosition(at itemIndex: Int) {
-        
         player.removeAllItems()
-        
         for index in itemIndex...playerItems.count - 1 {
             let item = playerItems[index]
             if player.canInsert(item, after: nil) {
@@ -175,6 +195,7 @@ class PlayerViewModel: NSObject, ObservableObject {
                 player.insert(item, after: nil)
             }
         }
+        print("\(player.currentItem)")
     }
     
     override public func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
@@ -216,35 +237,35 @@ class PlayerViewModel: NSObject, ObservableObject {
     
     @objc func changeIndexPlayer(notification: NSNotification) {
   
-        if !isPopUpInternet {
-            let name = notification.userInfo?["name"] as? String
-           
-            let index =  findIndexPlayerItems(name: name!)
-            
-            switch index {
-            case 0:
-                DispatchQueue.main.async {
-                    self.isHideBack = false
-                    self.isHideNext = true
-                }
-            case 1:
-                DispatchQueue.main.async {
-                    self.isHideBack = true
-                    self.isHideNext = true
-                }
-            case 2:
-                DispatchQueue.main.async {
-                    self.isHideNext = false
-                    self.isHideBack = true
-                }
-            default:
-                break
-            }
-            
-            DispatchQueue.main.async {
-                self.indexPlayer = index ?? 0
-            }
-        }
+//        if !isPopUpInternet {
+//            let name = notification.userInfo?["name"] as? String
+//           
+//            let index =  findIndexPlayerItems(name: name!)
+//            
+//            switch index {
+//            case 0:
+//                DispatchQueue.main.async {
+//                    self.isHideBack = false
+//                    self.isHideNext = true
+//                }
+//            case 1:
+//                DispatchQueue.main.async {
+//                    self.isHideBack = true
+//                    self.isHideNext = true
+//                }
+//            case 2:
+//                DispatchQueue.main.async {
+//                    self.isHideNext = false
+//                    self.isHideBack = true
+//                }
+//            default:
+//                break
+//            }
+//            
+//            DispatchQueue.main.async {
+//                self.indexPlayer = index ?? 0
+//            }
+//        }
     }
     
     @objc func playerEndedPlaying(_ notification: Notification) {
@@ -271,14 +292,14 @@ class PlayerViewModel: NSObject, ObservableObject {
         }
     }
     
-    func findIndexPlayerItems(name: String) -> Int? {
-        for i in 0...audio.count - 1 {
-              if audio[i] == name {
-                 return i
-              }
-           }
-        return nil
-    }
+//    func findIndexPlayerItems(name: String) -> Int? {
+//        for i in 0...audio.count - 1 {
+//              if audio[i] == name {
+//                 return i
+//              }
+//           }
+//        return nil
+//    }
     
     func checkStatusPlayer() -> Bool {
         if player.currentItem?.status == .readyToPlay {
@@ -289,9 +310,9 @@ class PlayerViewModel: NSObject, ObservableObject {
     
     // set merge audio and mp3
     func mergeUrl(indexAudio: Int, indexMp3: Int) {
-        let videoUrl: NSURL = NSURL(fileURLWithPath: audio[indexAudio])
-        let audioUrl: NSURL = NSURL(fileURLWithPath: mp3[indexMp3])
-        mergeFilesWithUrl(videoUrl: videoUrl.baseURL as! NSURL, audioUrl: audioUrl)
+        let mp4Url: NSURL = NSURL(fileURLWithPath: ListMp4[indexAudio].url)
+        let mp3Url: NSURL = NSURL(fileURLWithPath: ListMp3[indexMp3].url)
+        mergeFilesWithUrl(videoUrl: mp4Url.baseURL as! NSURL, audioUrl: mp3Url)
     }
     
     // merge audio

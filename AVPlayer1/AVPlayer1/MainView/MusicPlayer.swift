@@ -11,7 +11,7 @@ import AVFoundation
 
 struct MusicPlayer_Previews: PreviewProvider {
     static var previews: some View {
-        MusicPlayer(music: ListAudio.share.audios[0], isAudio: true)
+        MusicPlayer(ismp4: false, index: 0, LisFile: [])
     }
 }
 
@@ -20,16 +20,20 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
         popUpInternet()
     }
     
-    var music: Music
-    var isAudio: Bool
-    
-//    @ObservedObject var PlayerViewModel.share: PlayerViewModel = PlayerViewModel()
+    var ismp4: Bool
+    var index: Int
     @State var width : CGFloat = 0
     @State var finish = false
     @State var isPause = false
     @State var timer: Timer?
     @State private var timeCurrent: Float64 = 0.0
     @State private var timeDuration: Float64 = 0.0
+    var LisFile: [File]
+    @ObservedObject var model: PlayerViewModel
+    
+     int()  {
+        model = PlayerViewModel()
+    }
     
     var body: some View {
 //        Button(action: {
@@ -41,8 +45,9 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
 //            Image(systemName: "square.and.arrow.up")
 //                .padding(.top, 30)
 //        }
-        
-        ZStack {
+        PlayerViewModel.share.setPlayerItems()
+        PlayerViewModel.share.playItemAtPosition(at: index)
+        return ZStack {
             VStack(spacing: 20) {
                 
                 // activity
@@ -66,8 +71,7 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
                             .padding(.top, 30)
                     }
                     Spacer()
-//                    let name = isAudio ? PlayerViewModel.share.episode[PlayerViewModel.share.indexPlayer] : PlayerViewModel.share.song[PlayerViewModel.share.indexPlayer]
-                    Text("\(music.name)").font(.title).padding(.top)
+                    Text("\(LisFile[index].name)").font(.title).padding(.top)
                     Spacer()
                     // replay
                     Button(action: {
@@ -182,7 +186,7 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
                             if !PlayerViewModel.share.isHideNext {
                                 return
                             }
-                            if PlayerViewModel.share.indexPlayer < PlayerViewModel.share.audio.count - 1 {
+                            if PlayerViewModel.share.indexPlayer < LisFile.count - 1 {
                                 PlayerViewModel.share.indexPlayer += 1
                                 PlayerViewModel.share.playItemAtPosition(at: PlayerViewModel.share.indexPlayer)
                             }
@@ -195,7 +199,6 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
             }.padding()
         }
             .onAppear {
-//                self.model = PlayerViewModel()
                 try! AVAudioSession.sharedInstance().setCategory(.playback)
                 PlayerViewModel.share.checkNetWorkDelegate = self
                 if !Reachability.shared.isConnectedToInternet {
@@ -213,11 +216,8 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
             PlayerViewModel.share.isPlaying = false
         }
         }
-
-    func setData() {
-        PlayerViewModel.share.setPlayerItems()
-        PlayerViewModel.share.playItemAtPosition(at: findIndexPlayer())
-        let screen = UIScreen.main.bounds.width - 30
+    
+    func setData() {        let screen = UIScreen.main.bounds.width - 30
         
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {(_) in
             // check player.currentItem exists ?
@@ -234,20 +234,11 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
     }
     
     func findIndexPlayer() -> Int {
-        if isAudio {
-            for i in 0...ListAudio.share.audios.count - 1 {
-                if music.name == ListAudio.share.audios[i].name {
-                    return i
-                }
-            }
-        } else {
-            for i in 0...ListMp3.share.mp3s.count - 1 {
-                if music.name == ListMp3.share.mp3s[i].name {
-                    return i
-                }
-            }
-        }
-        
+//            for i in 0...LisFile.count - 1 {
+//                if music.name == ListAudio.share.audios[i].name {
+//                    return i
+//                }
+//            }
         return 0
     }
     
