@@ -11,7 +11,7 @@ import AVFoundation
 
 struct MusicPlayer_Previews: PreviewProvider {
     static var previews: some View {
-        MusicPlayer(ismp4: false, index: 0, LisFile: [])
+        MusicPlayer(ismp4: false, index: 0, listFile: [], model: PlayerViewModel())
     }
 }
 
@@ -29,11 +29,16 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
     @State private var timeCurrent: Float64 = 0.0
     @State private var timeDuration: Float64 = 0.0
     var LisFile: [File]
-    @ObservedObject var model: PlayerViewModel
+    var model: PlayerViewModel
     
-     int()  {
-        model = PlayerViewModel()
+    init(ismp4: Bool, index: Int, listFile: [File], model: PlayerViewModel) {
+        self.ismp4 = ismp4
+        self.index = index
+        self.LisFile = listFile
+        self.model = model
+        self.model = PlayerViewModel()
     }
+    
     
     var body: some View {
 //        Button(action: {
@@ -45,16 +50,15 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
 //            Image(systemName: "square.and.arrow.up")
 //                .padding(.top, 30)
 //        }
-        PlayerViewModel.share.setPlayerItems()
-        PlayerViewModel.share.playItemAtPosition(at: index)
+        
         return ZStack {
             VStack(spacing: 20) {
                 
                 // activity
                 GeometryReader { (geometry) in
                     Spacer()
-                    LoadingView(isShowing: .constant(PlayerViewModel.share.isLoading)) {
-                        PlayerContainerView(player: PlayerViewModel.share.player)
+                    LoadingView(isShowing: .constant(model.isLoading)) {
+                        PlayerContainerView(player: model.player)
                     }
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .cornerRadius(15)
@@ -65,9 +69,9 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
                 HStack {
                     // setting sound
                     Button(action: {
-                        PlayerViewModel.share.isMuted.toggle()
+                        model.isMuted.toggle()
                     }) {
-                        Image(systemName: PlayerViewModel.share.isMuted ? "speaker.slash.fill" : "speaker.slash")
+                        Image(systemName: model.isMuted ? "speaker.slash.fill" : "speaker.slash")
                             .padding(.top, 30)
                     }
                     Spacer()
@@ -75,12 +79,12 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
                     Spacer()
                     // replay
                     Button(action: {
-                        PlayerViewModel.share.isRepeat.toggle()
+                        model.isRepeat.toggle()
                     }) {
                         Image(systemName: "repeat")
                             .foregroundColor(Color.white)
                             .padding(.top, 30)
-                            .colorMultiply(PlayerViewModel.share.isRepeat ? Color.orange : Color.blue)
+                            .colorMultiply(model.isRepeat ? Color.orange : Color.blue)
                     }
                 }
                 
@@ -96,8 +100,8 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
                                         let x = value.location.x
                                         let screen = UIScreen.main.bounds.width - 30
                                         let percent = x / screen
-                                        let time = Double(percent) * CMTimeGetSeconds((PlayerViewModel.share.player.currentItem?.duration as CMTime?)!)
-                                        PlayerViewModel.share.player.seek(to: CMTime(value: CMTimeValue(time * 1000), timescale: 1000))
+                                        let time = Double(percent) * CMTimeGetSeconds((model.player.currentItem?.duration as CMTime?)!)
+                                        model.player.seek(to: CMTime(value: CMTimeValue(time * 1000), timescale: 1000))
                                     })
                         )
                     
@@ -106,12 +110,12 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
                 // pause and play
                 HStack {
                     let resultCurrent = String(timeCurrent).components(separatedBy: ".")
-                    let timeCurrent = PlayerViewModel.share.checkStatusPlayer() ? Int(resultCurrent[0])! : 0
+                    let timeCurrent = model.checkStatusPlayer() ? Int(resultCurrent[0])! : 0
                     let durationCurrent = FormatDuation().formatMinuteSeconds(timeCurrent)
                     Text("\(durationCurrent)")
                     Spacer()
                     let resultDuration = String(timeDuration).components(separatedBy: ".")
-                    let timeDuration = PlayerViewModel.share.checkStatusPlayer() ? Int(resultDuration[0]) : 0
+                    let timeDuration = model.checkStatusPlayer() ? Int(resultDuration[0]) : 0
                     let result = timeDuration ?? 0 - timeCurrent
                     let durationDuration = FormatDuation().formatMinuteSeconds(result)
                     Text("\(durationDuration)")
@@ -122,25 +126,25 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
                     
                     // set button back
                     Button(action: {
-                        if PlayerViewModel.share.isPopUpInternet {
+                        if model.isPopUpInternet {
                             popUpInternet()
                         } else {
-                            if !PlayerViewModel.share.isHideBack {
+                            if !model.isHideBack {
                                 return
                             }
-                            if PlayerViewModel.share.indexPlayer >= 1 {
-                                PlayerViewModel.share.indexPlayer -= 1
-                                PlayerViewModel.share.playItemAtPosition(at: PlayerViewModel.share.indexPlayer)
+                            if model.indexPlayer >= 1 {
+                                model.indexPlayer -= 1
+                                model.playItemAtPosition(at: model.indexPlayer)
                             }
                         }
                         
                     }) {
                         Image(systemName: "backward.fill").font(.title)
                     }
-                    .opacity(PlayerViewModel.share.isHideBack ? 1 : 0.1)
+                    .opacity(model.isHideBack ? 1 : 0.1)
                     // set gobackward 15
                     Button(action: {
-                        PlayerViewModel.share.rewindVideo(by: 15)
+                        model.rewindVideo(by: 15)
                         
                     }) {
                         Image(systemName: "gobackward.15").font(.title)
@@ -151,8 +155,8 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
                         if !Reachability.shared.isConnectedToInternet {
                             popUpInternet()
                         } else {
-                            PlayerViewModel.share.isPlaying.toggle()
-                            if PlayerViewModel.share.isPlaying {
+                            model.isPlaying.toggle()
+                            if model.isPlaying {
                                 isPause = false
                             } else {
                                 isPause = true
@@ -160,17 +164,17 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
                             if self.finish {
                                 self.width = 0
                                 self.finish = false
-                                PlayerViewModel.share.player.currentItem?.seek(to: .zero, completionHandler: nil)
+                                model.player.currentItem?.seek(to: .zero, completionHandler: nil)
                             }
                         }
                     }) {
-                        Image(systemName: PlayerViewModel.share.isPlaying && !self.finish ? "pause.fill" : "play.fill").font(.title)
+                        Image(systemName: model.isPlaying && !self.finish ? "pause.fill" : "play.fill").font(.title)
                     }
                     
                     // set gobackward 15
                     Button(action: {
                         
-                        PlayerViewModel.share.forwardVideo(by: 15)
+                        model.forwardVideo(by: 15)
                         
                     }) {
                         Image(systemName: "goforward.15").font(.title)
@@ -179,54 +183,62 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
                     // set forward
                     Button(action: {
                         if !Reachability.shared.isConnectedToInternet {
-                            PlayerViewModel.share.isPopUpInternet = true
+                            model.isPopUpInternet = true
                             popUpInternet()
                         } else {
-                            PlayerViewModel.share.isPopUpInternet = false
-                            if !PlayerViewModel.share.isHideNext {
+                            model.isPopUpInternet = false
+                            if !model.isHideNext {
                                 return
                             }
-                            if PlayerViewModel.share.indexPlayer < LisFile.count - 1 {
-                                PlayerViewModel.share.indexPlayer += 1
-                                PlayerViewModel.share.playItemAtPosition(at: PlayerViewModel.share.indexPlayer)
+                            if model.indexPlayer < LisFile.count - 1 {
+                                model.indexPlayer += 1
+                                model.playItemAtPosition(at: model.indexPlayer)
                             }
                         }
                     }) {
                         Image(systemName: "forward.fill").font(.title)
                     }
-                    .opacity(PlayerViewModel.share.isHideNext ? 1 : 0.1)
+                    .opacity(model.isHideNext ? 1 : 0.1)
                 }
             }.padding()
         }
             .onAppear {
                 try! AVAudioSession.sharedInstance().setCategory(.playback)
-                PlayerViewModel.share.checkNetWorkDelegate = self
+                model.checkNetWorkDelegate = self
                 if !Reachability.shared.isConnectedToInternet {
-                    PlayerViewModel.share.isPopUpInternet = true
+                    model.isPopUpInternet = true
                 } else {
-                    PlayerViewModel.share.isPopUpInternet = false
+                    model.isPopUpInternet = false
                 }
                 
-                if PlayerViewModel.share.isPopUpInternet {
+                if model.isPopUpInternet {
                     popUpInternet()
                 }
                 setData()
             }
         .onDisappear() {
-            PlayerViewModel.share.isPlaying = false
+            model.isPlaying = false
         }
         }
     
-    func setData() {        let screen = UIScreen.main.bounds.width - 30
+    func setData() {
         
+        if ismp4 {
+            model.initalMp4()
+            model.setPlayerItemsMp4()
+        }
+        model.setNotification()
+//        model.playItemAtPosition(at: index)
+        
+        let screen = UIScreen.main.bounds.width - 30
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {(_) in
             // check player.currentItem exists ?
-            guard let _ =  PlayerViewModel.share.player.currentItem else { return }
-            timeCurrent = CMTimeGetSeconds((PlayerViewModel.share.player.currentTime() as CMTime?)!)
-            timeDuration = CMTimeGetSeconds((PlayerViewModel.share.player.currentItem?.duration as CMTime?)!)
+            guard let _ =  model.player.currentItem else { return }
+            timeCurrent = CMTimeGetSeconds((model.player.currentTime() as CMTime?)!)
+            timeDuration = CMTimeGetSeconds((model.player.currentItem?.duration as CMTime?)!)
             let value = timeCurrent / timeDuration
             if !isPause {
-                if PlayerViewModel.share.player.status == .readyToPlay {
+                if model.player.status == .readyToPlay {
                     self.width = screen * CGFloat(value)
                 }
             }
@@ -244,16 +256,16 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
     
     // set popup internet
     func popUpInternet() {
-        PlayerViewModel.share.player.removeAllItems()
+        model.player.removeAllItems()
         let alert = UIAlertController(title: "NetWork", message: "Please check your network", preferredStyle: .alert)
         let ok = UIAlertAction(title: "OK", style: .default) { (_) in
             
             if !Reachability.shared.isConnectedToInternet {
-                PlayerViewModel.share.isPopUpInternet = true
+                model.isPopUpInternet = true
                 popUpInternet()
             } else {
-                PlayerViewModel.share.isPopUpInternet = false
-                PlayerViewModel.share.playItemAtPosition(at: PlayerViewModel.share.indexPlayer)
+                model.isPopUpInternet = false
+                model.playItemAtPosition(at: model.indexPlayer)
             }
         }
         alert.addAction(ok)

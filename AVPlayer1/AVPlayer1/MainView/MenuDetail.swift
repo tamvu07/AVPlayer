@@ -11,10 +11,12 @@ struct MenuDetail: View {
     var musicDetail: Music
     @State  var files: [File]  = []
     @State var ismp4 = false
+    var model: PlayerViewModel
+    
     var body: some View {
         List(files.indexed(), id: \.1.id) { index, file in
                 NavigationLink(
-                    destination:  MusicPlayer(ismp4: ismp4, index: index, LisFile: files)) {
+                    destination:  MusicPlayer(ismp4: ismp4, index: index, listFile: files, model: model)) {
                     RowMenuDetail(file: file)
                 }
             }
@@ -22,11 +24,9 @@ struct MenuDetail: View {
             if musicDetail.name == ListMusic.share.names[0] {
                 files = PlayerViewModel.share.ListMp4
                 ismp4 = true
-                PlayerViewModel.share.setPlayerItemsMp4()
             } else if musicDetail.name == ListMusic.share.names[1] {
                 files =  PlayerViewModel.share.ListMp3
                 ismp4 = false
-                PlayerViewModel.share.setPlayerItemsMp3()
             } 
         }
     }
@@ -34,7 +34,7 @@ struct MenuDetail: View {
 
 struct MenuDetail_Previews: PreviewProvider {
     static var previews: some View {
-        MenuDetail(musicDetail: ListMusic.share.musics[0])
+        MenuDetail(musicDetail: ListMusic.share.musics[0], model: PlayerViewModel())
     }
 }
 

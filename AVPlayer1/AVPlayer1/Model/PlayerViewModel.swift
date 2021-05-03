@@ -111,7 +111,7 @@ class PlayerViewModel: NSObject, ObservableObject {
         self.player =  AVQueuePlayer(items: playerItems)
     }
     
-    func setPlayerItems() {
+    func setNotification() {
         
         player.addObserver(self, forKeyPath: "timeControlStatus", options: [.old, .new], context: nil)
         

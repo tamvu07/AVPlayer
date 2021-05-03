@@ -34,7 +34,7 @@ struct Menu: View {
             if music.name == "setting" {
                 SettingPlayer()
             } else {
-                MenuDetail(musicDetail: music)
+                MenuDetail(musicDetail: music, model: PlayerViewModel())
             }
         }
     }
