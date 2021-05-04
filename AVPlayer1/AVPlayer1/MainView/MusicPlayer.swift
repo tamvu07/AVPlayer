@@ -11,7 +11,8 @@ import AVFoundation
 
 struct MusicPlayer_Previews: PreviewProvider {
     static var previews: some View {
-        MusicPlayer(ismp4: false, index: 0, listFile: [], model: PlayerViewModel())
+//        MusicPlayer(ismp4: false, index: 0, listFile: [], model: PlayerViewModel())
+        MusicPlayer()
     }
 }
 
@@ -20,25 +21,28 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
         popUpInternet()
     }
     
-    var ismp4: Bool
-    var index: Int
+//    var ismp4: Bool
+//    var index: Int
     @State var width : CGFloat = 0
     @State var finish = false
     @State var isPause = false
     @State var timer: Timer?
     @State private var timeCurrent: Float64 = 0.0
     @State private var timeDuration: Float64 = 0.0
-    var LisFile: [File]
-    var model: PlayerViewModel
+//    var LisFile: [File]
+   @ObservedObject  var model: PlayerViewModel
     
-    init(ismp4: Bool, index: Int, listFile: [File], model: PlayerViewModel) {
-        self.ismp4 = ismp4
-        self.index = index
-        self.LisFile = listFile
-        self.model = model
-        self.model = PlayerViewModel()
+//    init(ismp4: Bool, index: Int, listFile: [File], model: PlayerViewModel) {
+//        self.ismp4 = ismp4
+//        self.index = index
+//        self.LisFile = listFile
+//        self.model = model
+//        self.model = PlayerViewModel()
+//    }
+    
+    init() {
+        model = PlayerViewModel()
     }
-    
     
     var body: some View {
 //        Button(action: {
@@ -75,7 +79,7 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
                             .padding(.top, 30)
                     }
                     Spacer()
-                    Text("\(LisFile[index].name)").font(.title).padding(.top)
+//                    Text("\(LisFile[index].name)").font(.title).padding(.top)
                     Spacer()
                     // replay
                     Button(action: {
@@ -190,10 +194,10 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
                             if !model.isHideNext {
                                 return
                             }
-                            if model.indexPlayer < LisFile.count - 1 {
+//                            if model.indexPlayer < LisFile.count - 1 {
                                 model.indexPlayer += 1
                                 model.playItemAtPosition(at: model.indexPlayer)
-                            }
+//                            }
                         }
                     }) {
                         Image(systemName: "forward.fill").font(.title)
@@ -223,10 +227,10 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
     
     func setData() {
         
-        if ismp4 {
+        
             model.initalMp4()
             model.setPlayerItemsMp4()
-        }
+        
         model.setNotification()
 //        model.playItemAtPosition(at: index)
         

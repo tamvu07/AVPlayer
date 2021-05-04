@@ -89,7 +89,7 @@ extension SettingPlayer: DropdownButtonDelegate {
             }
         }
         if key == "merge" {
-            PlayerViewModel.share.mergeUrl(indexAudio: indexAudio, indexMp3: indexMp3)
+//            PlayerViewModel.share.mergeUrl(indexAudio: indexAudio, indexMp3: indexMp3)
         }
     }
 }

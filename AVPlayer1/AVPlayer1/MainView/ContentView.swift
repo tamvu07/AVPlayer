@@ -10,8 +10,9 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        Menu()
-//        MusicPlayer()
+//        Menu()
+        MusicPlayer()
+//        MusicPlayer(ismp4: true, index: 2, listFile: [], model: PlayerViewModel())
     }
 }
 

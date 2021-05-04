@@ -15,10 +15,10 @@ struct MenuDetail: View {
     
     var body: some View {
         List(files.indexed(), id: \.1.id) { index, file in
-                NavigationLink(
-                    destination:  MusicPlayer(ismp4: ismp4, index: index, listFile: files, model: model)) {
-                    RowMenuDetail(file: file)
-                }
+//                NavigationLink(
+//                    destination:  MusicPlayer(ismp4: ismp4, index: index, listFile: files, model: model)) {
+//                    RowMenuDetail(file: file)
+//                }
             }
         .onAppear {
             if musicDetail.name == ListMusic.share.names[0] {
