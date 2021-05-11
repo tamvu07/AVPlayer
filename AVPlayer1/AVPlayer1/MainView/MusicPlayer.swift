@@ -11,7 +11,7 @@ import AVFoundation
 
 struct MusicPlayer_Previews: PreviewProvider {
     static var previews: some View {
-        MusicPlayer(ismp4: false, index: 0, listFile: [], model: PlayerViewModel())
+        MusicPlayer(index: 0, model: PlayerViewModel(), ismp4: false)
     }
 }
 
@@ -20,37 +20,19 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
         popUpInternet()
     }
     
-    var ismp4: Bool
-    var index: Int
+    
     @State var width : CGFloat = 0
     @State var finish = false
     @State var isPause = false
     @State var timer: Timer?
     @State private var timeCurrent: Float64 = 0.0
     @State private var timeDuration: Float64 = 0.0
-    var LisFile: [File]
+    var index: Int
     var model: PlayerViewModel
-    
-    init(ismp4: Bool, index: Int, listFile: [File], model: PlayerViewModel) {
-        self.ismp4 = ismp4
-        self.index = index
-        self.LisFile = listFile
-        self.model = model
-        self.model = PlayerViewModel()
-    }
-    
+    var ismp4: Bool
     
     var body: some View {
-//        Button(action: {
-//
-//            let activityViewController = UIActivityViewController(activityItems: model.activityItem, applicationActivities: nil)
-//            UIApplication.shared.windows.first?.rootViewController?.present(activityViewController, animated: true, completion: nil)
-//
-//        }) {
-//            Image(systemName: "square.and.arrow.up")
-//                .padding(.top, 30)
-//        }
-        
+        model.ismp4 = ismp4
         return ZStack {
             VStack(spacing: 20) {
                 
@@ -75,7 +57,7 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
                             .padding(.top, 30)
                     }
                     Spacer()
-                    Text("\(LisFile[index].name)").font(.title).padding(.top)
+                    Text("\(model.getNamePlayer())").font(.title).padding(.top)
                     Spacer()
                     // replay
                     Button(action: {
@@ -190,7 +172,13 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
                             if !model.isHideNext {
                                 return
                             }
-                            if model.indexPlayer < LisFile.count - 1 {
+                            var count = 0
+                            if ismp4 {
+                                count = model.ListMp4.count
+                            } else {
+                                count = model.ListMp3.count
+                            }
+                            if model.indexPlayer < count - 1 {
                                 model.indexPlayer += 1
                                 model.playItemAtPosition(at: model.indexPlayer)
                             }
@@ -203,6 +191,7 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
             }.padding()
         }
             .onAppear {
+               
                 try! AVAudioSession.sharedInstance().setCategory(.playback)
                 model.checkNetWorkDelegate = self
                 if !Reachability.shared.isConnectedToInternet {
@@ -222,13 +211,15 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
         }
     
     func setData() {
-        
         if ismp4 {
             model.initalMp4()
             model.setPlayerItemsMp4()
+        } else {
+            model.initalMp3()
+            model.setPlayerItemsMp3()
         }
+        model.playItemAtPosition(at: index)
         model.setNotification()
-//        model.playItemAtPosition(at: index)
         
         let screen = UIScreen.main.bounds.width - 30
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {(_) in
@@ -243,15 +234,6 @@ struct MusicPlayer: View, CheckNetWorkDelegate {
                 }
             }
         }
-    }
-    
-    func findIndexPlayer() -> Int {
-//            for i in 0...LisFile.count - 1 {
-//                if music.name == ListAudio.share.audios[i].name {
-//                    return i
-//                }
-//            }
-        return 0
     }
     
     // set popup internet

@@ -32,12 +32,5 @@ struct LoadingView<Content>: View where Content: View {
                     .opacity(self.isShowing ? 1 : 0)
                 }
             }
-            
         }
 }
-//
-//struct LoadingView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        LoadingView<Any>()
-//    }
-//}

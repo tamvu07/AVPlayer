@@ -9,19 +9,20 @@ import SwiftUI
 
 struct MenuDetail: View {
     var musicDetail: Music
-    @State  var files: [File]  = []
-    @State var ismp4 = false
-    var model: PlayerViewModel
+    @State var files: [File]  = []
+    @State var ismp4: Bool = false
     
     var body: some View {
         List(files.indexed(), id: \.1.id) { index, file in
                 NavigationLink(
-                    destination:  MusicPlayer(ismp4: ismp4, index: index, listFile: files, model: model)) {
+                    destination:  MusicPlayer(index: index, model: PlayerViewModel(), ismp4: ismp4)) {
                     RowMenuDetail(file: file)
                 }
             }
         .onAppear {
             if musicDetail.name == ListMusic.share.names[0] {
+                PlayerViewModel.share.ListMp4 = []
+                PlayerViewModel.share.initalMp4()
                 files = PlayerViewModel.share.ListMp4
                 ismp4 = true
             } else if musicDetail.name == ListMusic.share.names[1] {
@@ -34,7 +35,7 @@ struct MenuDetail: View {
 
 struct MenuDetail_Previews: PreviewProvider {
     static var previews: some View {
-        MenuDetail(musicDetail: ListMusic.share.musics[0], model: PlayerViewModel())
+        MenuDetail(musicDetail: ListMusic.share.musics[0])
     }
 }
 

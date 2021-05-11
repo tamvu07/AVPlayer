@@ -24,6 +24,7 @@ struct Menu: View {
             }
         }
         .onAppear() {
+            DBManage.sharedInstance.deleteAllFromDB()
             PlayerViewModel.share.initalMp4()
             PlayerViewModel.share.initalMp3()
         }
@@ -34,7 +35,7 @@ struct Menu: View {
             if music.name == "setting" {
                 SettingPlayer()
             } else {
-                MenuDetail(musicDetail: music, model: PlayerViewModel())
+                MenuDetail(musicDetail: music)
             }
         }
     }

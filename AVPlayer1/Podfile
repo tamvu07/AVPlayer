@@ -7,5 +7,6 @@ target 'AVPlayer1' do
 
   # Pods for AVPlayer1
   pod 'Alamofire'
+  pod 'RealmSwift' 
   
 end

@@ -42,6 +42,7 @@ struct File: Identifiable, Hashable {
 
 class PlayerViewModel: NSObject, ObservableObject {
     
+  
     var player: AVQueuePlayer = AVQueuePlayer()
     static let share = PlayerViewModel()
     let id = UUID()
@@ -62,18 +63,25 @@ class PlayerViewModel: NSObject, ObservableObject {
     var checkNetWorkDelegate: CheckNetWorkDelegate?
     var timeObserverToken: Any?
     @Published var activityItem: [Any] = []
- 
+    var ismp4: Bool = false
+    let listmp4DB = DBManage.sharedInstance.getDataFromDB()
+    var arrMp4: [String] = []
+    var arrMp3: [String] = []
     
     override init() {
     }
     
     func initalMp4() {
-        let mp4First = File.init(url: "https://c4-ex-swe.nixcdn.com/PreNCT18/CuocSongXaNhaLyricVideo-MinhVuongM4U-6246814.mp4?st=EIc660IbW_Xb8Kck6DW8Kg&e=1618545952", name: "Episode One", imageName: "tv.music.note.fill")
-        let mp4Second = File.init(url: "https://vredir.nixcdn.com/PreNCT14/NhoGiaDinh-LeBaoBinh-5412176.mp4?st=9OAY9tIPtbgUjP2w8sO0-g&e=1618546099", name: "Episode Two", imageName: "tv.music.note.fill")
-        let mp4Three = File.init(url: "https://vredir.nixcdn.com/PreNCT14/DemLangThang-DinhPhuoc-5468044.mp4?st=auRGlK6NAnVy2QgW9p999Q&e=1618546221", name: "Episode Three", imageName: "tv.music.note.fill")
+        let mp4First = File.init(url: "video", name: "Episode One", imageName: "tv.music.note.fill")
+        let mp4Second = File.init(url: "video1", name: "Episode Two", imageName: "tv.music.note.fill")
+        let mp4Three = File.init(url: "video2", name: "Episode Three", imageName: "tv.music.note.fill")
         ListMp4.append(mp4First)
         ListMp4.append(mp4Second)
         ListMp4.append(mp4Three)
+        for i in 0 ..< listmp4DB.count {
+            let mp4 = File.init(url: listmp4DB[i].url, name: listmp4DB[i].name, imageName: listmp4DB[i].imageName)
+            ListMp4.append(mp4)
+        }
     }
     
     func initalMp3() {
@@ -88,10 +96,22 @@ class PlayerViewModel: NSObject, ObservableObject {
     func setPlayerItemsMp4() {
         playerItems.removeAll()
         self.player.removeAllItems()
-        for i in 0 ..< ListMp4.count {
+        for i in 0 ..< ListMp4.count - listmp4DB.count {
+            if let url = Bundle.main.path(forResource: self.ListMp4[i].url, ofType: "mp4") {
+                let asset = AVAsset(url: URL(fileURLWithPath: url))
+                let assetSubtitle = setSubtitle(localVideoAsset: asset)
+                let playerItem = AVPlayerItem(asset: assetSubtitle)
+                arrMp4.append("\(playerItem.description)")
+                playerItems.append(playerItem)
+            }
+        }
+        for i in ListMp4.count - listmp4DB.count ..< ListMp4.count {
             if let url = URL(string: self.ListMp4[i].url) {
                 let asset = AVAsset(url: url)
-                let playerItem = AVPlayerItem(asset: asset)
+                let assetSubtitle = setSubtitle(localVideoAsset: asset)
+                let playerItem = AVPlayerItem(asset: assetSubtitle)
+//                let playerItem = AVPlayerItem(asset: asset)
+                arrMp4.append("\(playerItem.description)")
                 playerItems.append(playerItem)
             }
         }
@@ -104,11 +124,40 @@ class PlayerViewModel: NSObject, ObservableObject {
         for i in 0 ..< ListMp3.count {
             if let url = Bundle.main.path(forResource: self.ListMp3[i].url, ofType: "mp3") {
                 let asset = AVAsset(url: URL(fileURLWithPath: url))
-                let playerItem = AVPlayerItem(asset: asset)
+                let assetSubtitle = setSubtitle(localVideoAsset: asset)
+                let playerItem = AVPlayerItem(asset: assetSubtitle)
+                arrMp3.append("\(playerItem.description)")
                 playerItems.append(playerItem)
             }
         }
         self.player =  AVQueuePlayer(items: playerItems)
+    }
+    
+    func setSubtitle(localVideoAsset: AVAsset) -> AVMutableComposition {
+        //Create AVMutableComposition
+        let videoPlusSubtitles = AVMutableComposition()
+        
+        //Adds video track audio
+        let videoTrack = videoPlusSubtitles.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+        try? videoTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: localVideoAsset.duration),
+                                         of: localVideoAsset.tracks(withMediaType: .audio)[0],
+                                         at: CMTime.zero)
+        if ismp4 {
+            //Adds video track video
+            let videoTrack = videoPlusSubtitles.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
+            try? videoTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: localVideoAsset.duration),
+                                             of: localVideoAsset.tracks(withMediaType: .video)[0],
+                                             at: CMTime.zero)
+        }
+        //Adds subtitle track
+        let subtitleAsset = AVURLAsset(url: Bundle.main.url(forResource: "trailer_720p", withExtension: ".vtt")!)
+        
+        let subtitleTrack = videoPlusSubtitles.addMutableTrack(withMediaType: .text, preferredTrackID: kCMPersistentTrackID_Invalid)
+        
+        try? subtitleTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: localVideoAsset.duration),
+                                            of: subtitleAsset.tracks(withMediaType: .text)[0],
+                                            at: CMTime.zero)
+        return videoPlusSubtitles
     }
     
     func setNotification() {
@@ -118,20 +167,7 @@ class PlayerViewModel: NSObject, ObservableObject {
         NotificationCenter.default.addObserver(self, selector: #selector(changeIndexPlayer), name: NSNotification.Name(rawValue: "nameItem"), object: nil)
         
         NotificationCenter.default.addObserver(self, selector: #selector(playerEndedPlaying), name: Notification.Name("AVPlayerItemDidPlayToEndTimeNotification"), object: nil)
-        addPeriodicTimeObserver()
        
-    }
-    
-    func addPeriodicTimeObserver() {
-        // Notify every half second
-        let timeScale = CMTimeScale(NSEC_PER_SEC)
-        let time = CMTime(seconds: 0.5, preferredTimescale: timeScale)
-
-        timeObserverToken = player.addPeriodicTimeObserver(forInterval: time,
-                                                          queue: .main) {
-            [weak self] time in
-            // update player transport UI
-        }
     }
     
     @Published var isPlaying: Bool = false {
@@ -187,15 +223,7 @@ class PlayerViewModel: NSObject, ObservableObject {
     }
     
     func playItemAtPosition(at itemIndex: Int) {
-        player.removeAllItems()
-        for index in itemIndex...playerItems.count - 1 {
-            let item = playerItems[index]
-            if player.canInsert(item, after: nil) {
-                item.seek(to: .zero, completionHandler: nil)
-                player.insert(item, after: nil)
-            }
-        }
-        print("\(player.currentItem)")
+        player.advanceToPreviousItem(for: itemIndex, with: self.playerItems)
     }
     
     override public func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
@@ -236,40 +264,37 @@ class PlayerViewModel: NSObject, ObservableObject {
     }
     
     @objc func changeIndexPlayer(notification: NSNotification) {
-  
-//        if !isPopUpInternet {
-//            let name = notification.userInfo?["name"] as? String
-//           
-//            let index =  findIndexPlayerItems(name: name!)
-//            
-//            switch index {
-//            case 0:
-//                DispatchQueue.main.async {
-//                    self.isHideBack = false
-//                    self.isHideNext = true
-//                }
-//            case 1:
-//                DispatchQueue.main.async {
-//                    self.isHideBack = true
-//                    self.isHideNext = true
-//                }
-//            case 2:
-//                DispatchQueue.main.async {
-//                    self.isHideNext = false
-//                    self.isHideBack = true
-//                }
-//            default:
-//                break
-//            }
-//            
-//            DispatchQueue.main.async {
-//                self.indexPlayer = index ?? 0
-//            }
-//        }
+        
+        if !isPopUpInternet {
+            let name = notification.userInfo?["name"] as? String
+           
+            let index =  findIndexPlayerItems(name: name!)
+            let indexPlayerCurrent = ismp4 ? ListMp4.count - 1 : ListMp3.count - 1
+            switch index {
+            case 0:
+                DispatchQueue.main.async {
+                    self.isHideBack = false
+                    self.isHideNext = true
+                }
+            case indexPlayerCurrent:
+                DispatchQueue.main.async {
+                    self.isHideNext = false
+                    self.isHideBack = true
+                }
+            default:
+                DispatchQueue.main.async {
+                    self.isHideBack = true
+                    self.isHideNext = true
+                }
+            }
+            
+            DispatchQueue.main.async {
+                self.indexPlayer = index ?? 0
+            }
+        }
     }
     
     @objc func playerEndedPlaying(_ notification: Notification) {
-        
         if indexPlayer == playerItems.count - 1 && !isRepeat {
             isPlaying = false
             playItemAtPosition(at: playerItems.count - 1 )
@@ -292,14 +317,24 @@ class PlayerViewModel: NSObject, ObservableObject {
         }
     }
     
-//    func findIndexPlayerItems(name: String) -> Int? {
-//        for i in 0...audio.count - 1 {
-//              if audio[i] == name {
-//                 return i
-//              }
-//           }
-//        return nil
-//    }
+    func findIndexPlayerItems(name: String) -> Int? {
+        if ismp4 {
+            let nameFinal = player.currentItem?.description
+            for i in 0...arrMp4.count - 1 {
+                if arrMp4[i] == nameFinal {
+                     return i
+                  }
+               }
+        } else {
+            let nameFinal = player.currentItem?.description
+            for i in 0...arrMp3.count - 1 {
+                if arrMp3[i]  == nameFinal {
+                     return i
+                  }
+               }
+        }
+        return nil
+    }
     
     func checkStatusPlayer() -> Bool {
         if player.currentItem?.status == .readyToPlay {
@@ -309,24 +344,47 @@ class PlayerViewModel: NSObject, ObservableObject {
     }
     
     // set merge audio and mp3
-    func mergeUrl(indexAudio: Int, indexMp3: Int) {
-        let mp4Url: NSURL = NSURL(fileURLWithPath: ListMp4[indexAudio].url)
-        let mp3Url: NSURL = NSURL(fileURLWithPath: ListMp3[indexMp3].url)
-        mergeFilesWithUrl(videoUrl: mp4Url.baseURL as! NSURL, audioUrl: mp3Url)
+    func mergeUrl(videoUrl: Int, audioUrl: Int, success: @escaping(Bool) -> (), failure: @escaping(Bool) -> ()) {
+        let mp4Url: NSURL = NSURL(fileURLWithPath: Bundle.main.path(forResource: self.ListMp4[videoUrl - 1].url, ofType: "mp4")!)
+        let mp3Url: NSURL = NSURL(fileURLWithPath: Bundle.main.path(forResource: self.ListMp3[audioUrl - 1].url, ofType: "mp3")!)
+        mergeFilesWithUrl(videoUrl: mp4Url, audioUrl: mp3Url, name: "\(videoUrl)\(audioUrl)", success: {(merge) in
+            success(merge)
+        }, failure: { (merge) in
+            failure(merge)
+        })
+    }
+    
+    func getNamePlayer() -> String {
+            if ismp4 {
+                let nameFinal = player.currentItem?.description
+                for i in 0 ..< arrMp4.count {
+                    if arrMp4[i] == nameFinal {
+                        return ListMp4[i].name
+                    }
+                }
+            } else {
+                let nameFinal = player.currentItem?.description
+                for i in 0 ..< arrMp3.count {
+                    if arrMp3[i] == nameFinal {
+                        return ListMp3[i].name
+                    }
+                }
+            }
+        return ""
+       
     }
     
     // merge audio
-    func mergeFilesWithUrl(videoUrl:NSURL, audioUrl:NSURL) {
+    func mergeFilesWithUrl(videoUrl: NSURL, audioUrl: NSURL, name: String, success: @escaping(Bool) -> (), failure: @escaping(Bool) -> ()) {
+        
         let mixComposition : AVMutableComposition = AVMutableComposition()
-        var mutableCompositionVideoTrack : [AVMutableCompositionTrack] = []
-        var mutableCompositionAudioTrack : [AVMutableCompositionTrack] = []
-        let totalVideoCompositionInstruction : AVMutableVideoCompositionInstruction = AVMutableVideoCompositionInstruction()
-
+        var mutableCompositionVideoTrack: [AVMutableCompositionTrack] = []
+        var mutableCompositionAudioTrack: [AVMutableCompositionTrack] = []
+        let totalVideoCompositionInstruction: AVMutableVideoCompositionInstruction = AVMutableVideoCompositionInstruction()
 
         //start merge
-
-        let aVideoAsset : AVAsset = AVAsset(url: videoUrl as URL)
-        let aAudioAsset : AVAsset = AVAsset(url: audioUrl as URL)
+        let aVideoAsset: AVAsset = AVAsset(url: videoUrl as URL)
+        let aAudioAsset: AVAsset = AVAsset(url: audioUrl as URL)
 
         mutableCompositionVideoTrack.append(mixComposition.addMutableTrack(withMediaType: AVMediaType.video, preferredTrackID: kCMPersistentTrackID_Invalid)!)
         mutableCompositionAudioTrack.append( mixComposition.addMutableTrack(withMediaType: AVMediaType.audio, preferredTrackID: kCMPersistentTrackID_Invalid)!)
@@ -357,16 +415,13 @@ class PlayerViewModel: NSObject, ObservableObject {
 
         mutableVideoComposition.renderSize = CGSize(width: 1280,height: 720)
 
-        //        playerItem = AVPlayerItem(asset: mixComposition)
-        //        player = AVPlayer(playerItem: playerItem!)
-        //
-        //
-        //        AVPlayerVC.player = player
-
-
-
+        let nameMp4 = "Episode" + "\(name)\(Int.random(in: 0..<9))"
         //find your video on this URl
-        let savePathUrl : NSURL = NSURL(fileURLWithPath: NSHomeDirectory() + "/Documents/newVideo123.mp4")
+        let savePathUrl : NSURL = NSURL(fileURLWithPath: NSHomeDirectory() + "/Documents/\(nameMp4).mp4")
+        
+        do { // delete old video
+            try FileManager.default.removeItem(at: savePathUrl as URL)
+            } catch { print(error.localizedDescription) }
 
         let assetExport: AVAssetExportSession = AVAssetExportSession(asset: mixComposition, presetName: AVAssetExportPresetHighestQuality)!
         assetExport.outputFileType = AVFileType.mp4
@@ -379,38 +434,52 @@ class PlayerViewModel: NSObject, ObservableObject {
             case AVAssetExportSessionStatus.completed:
                 //let assetsLib = ALAssetsLibrary()
                 //assetsLib.writeVideoAtPathToSavedPhotosAlbum(savePathUrl, completionBlock: nil)
-
                 print("success")
-                
-                let fileName = String((savePathUrl.lastPathComponent!)) as NSString
-                // Create destination URL
-                let documentsUrl:URL =  (FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first as URL?)!
-                let destinationFileUrl = documentsUrl.appendingPathComponent("\(fileName)")
-                //Create URL to the source file you want to download
-//                let sessionConfig = URLSessionConfiguration.default
-//                let session = URLSession(configuration: sessionConfig)
-//                let request = URLRequest(url: URL(string: savePathUrl.relativeString)!)
-                do {
-                    let contents  = try FileManager.default.contentsOfDirectory(at: documentsUrl, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
-                    for indexx in 0..<contents.count {
-                        if contents[indexx].lastPathComponent == destinationFileUrl.lastPathComponent {
-                            
-                            DispatchQueue.main.async {
-                                self.activityItem = [contents[indexx]]
-                            }
-                        }
-                    }
-                }
-                catch (let err) {
-                    print("error: \(err)")
+                success(true)
+                let item = Item()
+                item.url = "\(savePathUrl)"
+                item.name = nameMp4
+                item.imageName = "tv.music.note.fill"
+                DispatchQueue.main.async {
+                    popMegerSuccess()
+                    DBManage.sharedInstance.addData(object: item)
                 }
             case  AVAssetExportSessionStatus.failed:
                 print("failed \(String(describing: assetExport.error))")
+                failure(false)
             case AVAssetExportSessionStatus.cancelled:
                 print("cancelled \(String(describing: assetExport.error))")
+                failure(false)
             default:
                 print("complete")
+                failure(false)
             }
         }
     }
+    
+    // set popup meger success
+    func popMegerSuccess() {
+        let alert = UIAlertController(title: "Meger", message: "Files were megered ", preferredStyle: .alert)
+        let ok = UIAlertAction(title: "OK", style: .default) { (_) in
+            
+        }
+        alert.addAction(ok)
+        UIApplication.shared.windows.first?.rootViewController?.present(alert, animated: true, completion: {
+        })
+    }
+    
+    
+}
+
+extension AVQueuePlayer {
+func advanceToPreviousItem(for currentItem: Int, with initialItems: [AVPlayerItem]) {
+    self.removeAllItems()
+    for i in currentItem..<initialItems.count {
+        let obj: AVPlayerItem? = initialItems[i]
+        if self.canInsert(obj!, after: nil) {
+            obj?.seek(to: CMTime.zero, completionHandler: nil)
+            self.insert(obj!, after: nil)
+        }
+    }
+}
 }

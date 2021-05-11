@@ -10,10 +10,13 @@ import SwiftUI
 struct SettingPlayer: View {
     
     let listMusic = ListMusic.share.musics
-    @State var nameAudio: String = "Audio"
+    @State var nameAudio: String = "Mp4"
     @State private var nameMp3 = "Mp3"
     @State private var nameAction = "Action"
     @State var idAudio = 0
+    @State var indexAudio = 0
+    @State var indexMp3 = 0
+    @State var isMergeCurrent: Bool = false
     
     static let onAudioSelect = { (key: String) in
         print("\(key)")
@@ -38,41 +41,54 @@ struct SettingPlayer: View {
         DropdownOption(key: "merge", val: "Merge")
     ]
     var body: some View {
-        VStack {
-            
-            HStack {
-                Text(self.nameAudio)
-                    .padding()
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.blue, lineWidth: 2)
-                    )
-                    .foregroundColor(.red)
-                Text(self.nameMp3)
-                    .padding()
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.blue, lineWidth: 2)
-                    )
-                    .foregroundColor(.red)
-            }
+        ZStack {
             
             VStack {
-                DropdownButton(shouldShowDropdown: false, displayText: .constant("\(nameAudio)"), options: SettingPlayer.audios, onSelect: SettingPlayer.onAudioSelect, delegate: self)
-               
-                DropdownButton(shouldShowDropdown: false, displayText: .constant("\(nameMp3)"), options: SettingPlayer.mp3s, onSelect: SettingPlayer.onMp3Select, delegate: self)
+                HStack {
+                    Spacer()
+                    Text(self.nameAudio)
+                        .padding()
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.blue, lineWidth: 2)
+                        )
+                        .foregroundColor(.red)
+                    Spacer()
+                    Text(self.nameMp3)
+                        .padding()
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.blue, lineWidth: 2)
+                        )
+                        .foregroundColor(.red)
+                    Spacer()
+                }
+                Divider()
+                VStack {
+                    DropdownButton(shouldShowDropdown: false, displayText: .constant("\(nameAudio)"), options: SettingPlayer.audios, onSelect: SettingPlayer.onAudioSelect, delegate: self)
+                   
+                    DropdownButton(shouldShowDropdown: false, displayText: .constant("\(nameMp3)"), options: SettingPlayer.mp3s, onSelect: SettingPlayer.onMp3Select, delegate: self)
+                }
+                
+                DropdownButton(shouldShowDropdown: false, displayText: .constant("\(nameAction)"), options: SettingPlayer.actions, onSelect: SettingPlayer.onActionSelect, delegate: self)
             }
             
-            DropdownButton(shouldShowDropdown: false, displayText: .constant("\(nameAction)"), options: SettingPlayer.actions, onSelect: SettingPlayer.onActionSelect, delegate: self)
+            // activity
+            GeometryReader { (geometry) in
+                ActivityIndicator(isAnimating: .constant(isMergeCurrent), style: .large)
+                .frame(width: geometry.size.width, height: geometry.size.height)
+                .cornerRadius(15)
+            }
+            .padding(.top)
+            
         }
+        
     }
 }
 
 extension SettingPlayer: DropdownButtonDelegate {
+    
     func onSelect(key: String) {
-        var indexAudio = 0
-        var indexMp3 = 0
-        
         if key.contains("mp3") {
             for i in SettingPlayer.mp3s {
                 if i.key == key {
@@ -89,7 +105,12 @@ extension SettingPlayer: DropdownButtonDelegate {
             }
         }
         if key == "merge" {
-            PlayerViewModel.share.mergeUrl(indexAudio: indexAudio, indexMp3: indexMp3)
+            isMergeCurrent = true
+            PlayerViewModel.share.mergeUrl(videoUrl: indexAudio, audioUrl: indexMp3, success: {(merge) in
+                isMergeCurrent = false
+            }, failure: { (merge) in
+                isMergeCurrent = false
+            })
         }
     }
 }

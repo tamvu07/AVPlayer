@@ -25,10 +25,7 @@ class PlayerView: UIView {
         }
         set {
             playerLayer.player = newValue
-            if let url = newValue?.currentItem?.asset as? AVURLAsset {
-                let name = "\(url.url)"
-                NotificationCenter.default.post(name: NSNotification.Name(rawValue: "nameItem"), object: nil, userInfo: ["name" : "\(name)"])
-            }
+            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "nameItem"), object: nil, userInfo: ["name" : "\(newValue?.currentItem?.description ?? "")"])
         }
 
     }
@@ -50,9 +47,9 @@ final class PlayerContainerView: UIViewRepresentable {
     
     typealias UIViewType = PlayerView
     
-    let player: AVPlayer
+    let player: AVQueuePlayer
     
-    init(player: AVPlayer) {
+    init(player: AVQueuePlayer) {
         self.player = player
     }
     
