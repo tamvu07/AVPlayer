@@ -110,7 +110,6 @@ class PlayerViewModel: NSObject, ObservableObject {
                 let asset = AVAsset(url: url)
                 let assetSubtitle = setSubtitle(localVideoAsset: asset)
                 let playerItem = AVPlayerItem(asset: assetSubtitle)
-//                let playerItem = AVPlayerItem(asset: asset)
                 arrMp4.append("\(playerItem.description)")
                 playerItems.append(playerItem)
             }
@@ -131,33 +130,6 @@ class PlayerViewModel: NSObject, ObservableObject {
             }
         }
         self.player =  AVQueuePlayer(items: playerItems)
-    }
-    
-    func setSubtitle(localVideoAsset: AVAsset) -> AVMutableComposition {
-        //Create AVMutableComposition
-        let videoPlusSubtitles = AVMutableComposition()
-        
-        //Adds video track audio
-        let videoTrack = videoPlusSubtitles.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
-        try? videoTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: localVideoAsset.duration),
-                                         of: localVideoAsset.tracks(withMediaType: .audio)[0],
-                                         at: CMTime.zero)
-        if ismp4 {
-            //Adds video track video
-            let videoTrack = videoPlusSubtitles.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
-            try? videoTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: localVideoAsset.duration),
-                                             of: localVideoAsset.tracks(withMediaType: .video)[0],
-                                             at: CMTime.zero)
-        }
-        //Adds subtitle track
-        let subtitleAsset = AVURLAsset(url: Bundle.main.url(forResource: "trailer_720p", withExtension: ".vtt")!)
-        
-        let subtitleTrack = videoPlusSubtitles.addMutableTrack(withMediaType: .text, preferredTrackID: kCMPersistentTrackID_Invalid)
-        
-        try? subtitleTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: localVideoAsset.duration),
-                                            of: subtitleAsset.tracks(withMediaType: .text)[0],
-                                            at: CMTime.zero)
-        return videoPlusSubtitles
     }
     
     func setNotification() {
@@ -343,17 +315,6 @@ class PlayerViewModel: NSObject, ObservableObject {
         return false
     }
     
-    // set merge audio and mp3
-    func mergeUrl(videoUrl: Int, audioUrl: Int, success: @escaping(Bool) -> (), failure: @escaping(Bool) -> ()) {
-        let mp4Url: NSURL = NSURL(fileURLWithPath: Bundle.main.path(forResource: self.ListMp4[videoUrl - 1].url, ofType: "mp4")!)
-        let mp3Url: NSURL = NSURL(fileURLWithPath: Bundle.main.path(forResource: self.ListMp3[audioUrl - 1].url, ofType: "mp3")!)
-        mergeFilesWithUrl(videoUrl: mp4Url, audioUrl: mp3Url, name: "\(videoUrl)\(audioUrl)", success: {(merge) in
-            success(merge)
-        }, failure: { (merge) in
-            failure(merge)
-        })
-    }
-    
     func getNamePlayer() -> String {
             if ismp4 {
                 let nameFinal = player.currentItem?.description
@@ -371,7 +332,42 @@ class PlayerViewModel: NSObject, ObservableObject {
                 }
             }
         return ""
-       
+    }
+    
+    // set merge audio and mp3
+    func mergeUrl(videoUrl: Int, audioUrl: Int, success: @escaping(Bool) -> (), failure: @escaping(Bool) -> ()) {
+        let mp4Url: NSURL = NSURL(fileURLWithPath: Bundle.main.path(forResource: self.ListMp4[videoUrl - 1].url, ofType: "mp4")!)
+        let mp3Url: NSURL = NSURL(fileURLWithPath: Bundle.main.path(forResource: self.ListMp3[audioUrl - 1].url, ofType: "mp3")!)
+        mergeFilesWithUrl(videoUrl: mp4Url, audioUrl: mp3Url, name: "\(videoUrl)\(audioUrl)", success: {(merge) in
+            success(merge)
+        }, failure: { (merge) in
+            failure(merge)
+        })
+    }
+    
+    func setSubtitle(localVideoAsset: AVAsset) -> AVMutableComposition {
+        let videoPlusSubtitles = AVMutableComposition()
+
+        let videoTrack = videoPlusSubtitles.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+        try? videoTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: localVideoAsset.duration),
+                                         of: localVideoAsset.tracks(withMediaType: .audio)[0],
+                                         at: CMTime.zero)
+        if ismp4 {
+            //Adds video track video
+            let videoTrack = videoPlusSubtitles.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
+            try? videoTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: localVideoAsset.duration),
+                                             of: localVideoAsset.tracks(withMediaType: .video)[0],
+                                             at: CMTime.zero)
+        }
+        //Adds subtitle track
+        let subtitleAsset = AVURLAsset(url: Bundle.main.url(forResource: "trailer_720p", withExtension: ".vtt")!)
+        
+        let subtitleTrack = videoPlusSubtitles.addMutableTrack(withMediaType: .text, preferredTrackID: kCMPersistentTrackID_Invalid)
+        
+        try? subtitleTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: localVideoAsset.duration),
+                                            of: subtitleAsset.tracks(withMediaType: .text)[0],
+                                            at: CMTime.zero)
+        return videoPlusSubtitles
     }
     
     // merge audio
@@ -380,46 +376,29 @@ class PlayerViewModel: NSObject, ObservableObject {
         let mixComposition : AVMutableComposition = AVMutableComposition()
         var mutableCompositionVideoTrack: [AVMutableCompositionTrack] = []
         var mutableCompositionAudioTrack: [AVMutableCompositionTrack] = []
-        let totalVideoCompositionInstruction: AVMutableVideoCompositionInstruction = AVMutableVideoCompositionInstruction()
 
         //start merge
         let aVideoAsset: AVAsset = AVAsset(url: videoUrl as URL)
         let aAudioAsset: AVAsset = AVAsset(url: audioUrl as URL)
+        
+        let aVideoAssetTrack : AVAssetTrack = aVideoAsset.tracks(withMediaType: .video)[0]
+        let aAudioAssetTrack : AVAssetTrack = aAudioAsset.tracks(withMediaType: .audio)[0]
 
-        mutableCompositionVideoTrack.append(mixComposition.addMutableTrack(withMediaType: AVMediaType.video, preferredTrackID: kCMPersistentTrackID_Invalid)!)
-        mutableCompositionAudioTrack.append( mixComposition.addMutableTrack(withMediaType: AVMediaType.audio, preferredTrackID: kCMPersistentTrackID_Invalid)!)
-
-        let aVideoAssetTrack : AVAssetTrack = aVideoAsset.tracks(withMediaType: AVMediaType.video)[0]
-        let aAudioAssetTrack : AVAssetTrack = aAudioAsset.tracks(withMediaType: AVMediaType.audio)[0]
+        mutableCompositionVideoTrack.append(mixComposition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)!)
+        mutableCompositionAudioTrack.append(mixComposition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)!)
 
         do{
             try mutableCompositionVideoTrack[0].insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: aVideoAssetTrack.timeRange.duration), of: aVideoAssetTrack, at: CMTime.zero)
 
-            //In my case my audio file is longer then video file so i took videoAsset duration
-            //instead of audioAsset duration
-
             try mutableCompositionAudioTrack[0].insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: aVideoAssetTrack.timeRange.duration), of: aAudioAssetTrack, at: CMTime.zero)
 
-            //Use this instead above line if your audiofile and video file's playing durations are same
-
-            //            try mutableCompositionAudioTrack[0].insertTimeRange(CMTimeRangeMake(kCMTimeZero, aVideoAssetTrack.timeRange.duration), ofTrack: aAudioAssetTrack, atTime: kCMTimeZero)
-
-        }catch{
-
+        } catch {
         }
 
-        totalVideoCompositionInstruction.timeRange = CMTimeRangeMake(start: CMTime.zero,duration: aVideoAssetTrack.timeRange.duration )
-
-        let mutableVideoComposition : AVMutableVideoComposition = AVMutableVideoComposition()
-        mutableVideoComposition.frameDuration = CMTimeMake(value: 1, timescale: 30)
-
-        mutableVideoComposition.renderSize = CGSize(width: 1280,height: 720)
-
         let nameMp4 = "Episode" + "\(name)\(Int.random(in: 0..<9))"
-        //find your video on this URl
-        let savePathUrl : NSURL = NSURL(fileURLWithPath: NSHomeDirectory() + "/Documents/\(nameMp4).mp4")
+        let savePathUrl: NSURL = NSURL(fileURLWithPath: NSHomeDirectory() + "/Documents/\(nameMp4).mp4")
         
-        do { // delete old video
+        do {
             try FileManager.default.removeItem(at: savePathUrl as URL)
             } catch { print(error.localizedDescription) }
 
@@ -432,8 +411,6 @@ class PlayerViewModel: NSObject, ObservableObject {
             switch assetExport.status {
 
             case AVAssetExportSessionStatus.completed:
-                //let assetsLib = ALAssetsLibrary()
-                //assetsLib.writeVideoAtPathToSavedPhotosAlbum(savePathUrl, completionBlock: nil)
                 print("success")
                 success(true)
                 let item = Item()
@@ -461,14 +438,11 @@ class PlayerViewModel: NSObject, ObservableObject {
     func popMegerSuccess() {
         let alert = UIAlertController(title: "Meger", message: "Files were megered ", preferredStyle: .alert)
         let ok = UIAlertAction(title: "OK", style: .default) { (_) in
-            
         }
         alert.addAction(ok)
         UIApplication.shared.windows.first?.rootViewController?.present(alert, animated: true, completion: {
         })
     }
-    
-    
 }
 
 extension AVQueuePlayer {
