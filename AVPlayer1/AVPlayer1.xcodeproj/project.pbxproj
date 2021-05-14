@@ -36,7 +36,7 @@
 		E585EF62262EB12F006915D1 /* MusicPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E585EF61262EB12F006915D1 /* MusicPlayer.swift */; };
 		E585EF65262EDFC2006915D1 /* SettingPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E585EF64262EDFC1006915D1 /* SettingPlayer.swift */; };
 		E58EDE28264E1C3D008A9947 /* trailer_720p.vtt in Resources */ = {isa = PBXBuildFile; fileRef = E58EDE27264E1C3C008A9947 /* trailer_720p.vtt */; };
-		E58EDE2E264E1D1D008A9947 /* DBManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E58EDE2D264E1D1D008A9947 /* DBManager.swift */; };
+		E58EDE35264E1F38008A9947 /* DBManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E58EDE34264E1F38008A9947 /* DBManager.swift */; };
 		E5FB81CE2625876F00F3977C /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5FB81CD2625876F00F3977C /* LoadingView.swift */; };
 /* End PBXBuildFile section */
 
@@ -74,7 +74,7 @@
 		E585EF61262EB12F006915D1 /* MusicPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicPlayer.swift; sourceTree = "<group>"; };
 		E585EF64262EDFC1006915D1 /* SettingPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingPlayer.swift; sourceTree = "<group>"; };
 		E58EDE27264E1C3C008A9947 /* trailer_720p.vtt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = trailer_720p.vtt; sourceTree = "<group>"; };
-		E58EDE2D264E1D1D008A9947 /* DBManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBManager.swift; sourceTree = "<group>"; };
+		E58EDE34264E1F38008A9947 /* DBManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBManager.swift; sourceTree = "<group>"; };
 		E5FB81CD2625876F00F3977C /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -177,7 +177,7 @@
 		E5682149261F14FF00B76AE7 /* Model */ = {
 			isa = PBXGroup;
 			children = (
-				E58EDE2D264E1D1D008A9947 /* DBManager.swift */,
+				E58EDE34264E1F38008A9947 /* DBManager.swift */,
 				E568214F261F1C1F00B76AE7 /* PlayerViewModel.swift */,
 				E585EF5B262E6F83006915D1 /* Music.swift */,
 			);
@@ -363,7 +363,7 @@
 				E566DD9726281FBE002A93D4 /* Manager.swift in Sources */,
 				E585EF5C262E6F83006915D1 /* Music.swift in Sources */,
 				B556AE3A263C096B00061693 /* RowMenuDetail.swift in Sources */,
-				E58EDE2E264E1D1D008A9947 /* DBManager.swift in Sources */,
+				E58EDE35264E1F38008A9947 /* DBManager.swift in Sources */,
 				E56AA41926315CFD003D648B /* Dropdown.swift in Sources */,
 				E585EF54262E6C7B006915D1 /* Menu.swift in Sources */,
 				E5682153261F1C7E00B76AE7 /* PlayerView.swift in Sources */,
